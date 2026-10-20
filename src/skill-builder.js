@@ -10,6 +10,10 @@
 export const SKILL_DIR = 'skills/prompt-workbench';
 export const SKILL_NAME = 'prompt-workbench';
 
+/** 与渲染引擎共用同一条交付规则，避免 Skill 与网页给出不同口径。 */
+export { UNIVERSAL_DELIVERY_RULE } from './core.js';
+import { UNIVERSAL_DELIVERY_RULE } from './core.js';
+
 const DESCRIPTION =
   '把模糊任务变成可直接使用的提示词：先选场景，再按固定问题清单逐个提问，最后渲染成成品提示词。' +
   '覆盖 20 个技术场景（需求澄清、调试、代码审查、重构、测试、API 对接、部署、技术选型、数据分析、技术调研、学习计划、Agent 任务、技术文档、写作等）。' +
@@ -49,6 +53,7 @@ function skillMd(scenes) {
   lines.push('- 不要一次抛出多个问题；每轮只问一个。');
   lines.push('- 不要编造用户没有提供的材料、数字、版本号；缺的地方写「待确认」。');
   lines.push('- 模板里的「（未提供，请先向用户确认）」在生成成品前必须被回答或标为假设。');
+  lines.push('- **先给能用的最小版本，再列需要确认的信息（最多 3 条）；不要只追问不产出。**');
   lines.push('- 成品提示词必须包含：角色 / 任务 / 已知信息 / 输出格式 / 约束；不得掺入解释性废话。');
   lines.push('- 场景库的借鉴来源写在 `references/sources.md`，不要声称这些方法全部原创。');
   lines.push('');
@@ -116,6 +121,12 @@ function sceneMd(scene) {
   lines.push('');
   lines.push('````text');
   lines.push(scene.template);
+  lines.push('````');
+  lines.push('');
+  lines.push('## 交付要求');
+  lines.push('');
+  lines.push('````text');
+  lines.push(UNIVERSAL_DELIVERY_RULE);
   lines.push('````');
   lines.push('');
   lines.push('## 来源');

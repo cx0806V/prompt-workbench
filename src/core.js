@@ -5,7 +5,21 @@
  * 因此 MCP Server、Skill 构建脚本、网页工作台三个壳可以共用同一份逻辑，且能直接单测。
  */
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
+
+/**
+ * 通用交付规则：所有场景渲染时自动附加。
+ *
+ * 来源：2026-10-20 程翔父亲实测反馈——AI 拿到"用 PLC 写一段跑马灯程序"的提示词后，
+ * 只列缺失和假设、不给代码，用户拿不到能用的东西。
+ * 结论：工具不能只会追问，必须先给能用的初版，再列需要确认的信息。
+ */
+export const UNIVERSAL_DELIVERY_RULE = [
+  '## 通用交付规则（自动附加，优先级高于上面的表述）',
+  '- 如果我要的是「一个结果」（代码、程序、文案、方案、清单、报告）：**先给一版能直接用的最小版本**；缺的参数用默认假设填上并标注「假设」，不要因为信息不全就只问不产出。',
+  '- 如果我要的是「改我现有的仓库/文件/系统」：先列改动清单等我确认，再动手。',
+  '- 需要我补充的信息最多 3 条，放在结果之后，不要放在最前面。',
+].join('\n');
 
 const SCENE_FIELDS = ['id', 'title', 'category', 'whenToUse', 'questions', 'template', 'sources'];
 const QUESTION_FIELDS = ['key', 'ask'];
@@ -188,7 +202,7 @@ export function renderPrompt(scenes, id, answers = {}) {
     prompt = prompt.split(`{{${question.key}}}`).join(value);
   }
 
-  return { sceneId: scene.id, prompt: prompt.trim(), missing, warnings };
+  return { sceneId: scene.id, prompt: `${prompt.trim()}\n\n${UNIVERSAL_DELIVERY_RULE}`, missing, warnings };
 }
 
 /** 场景库统计，给 /health 和 README 用。 */

@@ -144,6 +144,18 @@ test('renderPrompt 对可选缺失与未知字段给出 warnings', () => {
   assert.ok(withUnknown.warnings.some((w) => w.includes('foo')), '未知字段应提示');
 });
 
+test('所有成品提示词都附加「先给初版再列缺口」的通用交付规则', () => {
+  const result = renderPrompt(allScenes, 'requirement-clarify', VALID_ANSWERS);
+  assert.ok(result.prompt.includes('通用交付规则'), '缺少通用交付规则');
+  assert.ok(result.prompt.includes('先给一版能直接用的最小版本'), '缺少初版优先规则');
+  assert.ok(result.prompt.indexOf('通用交付规则') > result.prompt.indexOf('资深需求分析师'), '规则应附在场景模板之后');
+
+  // 父亲 2026-10-20 的实测场景：要一段能跑的程序，不能只追问
+  const coding = findScene(allScenes, 'coding-task');
+  assert.ok(coding.template.includes('先给一版可运行的最小实现'), 'coding-task 必须支持初版优先');
+  assert.ok(coding.template.includes('如果我要改现有仓库'), '改仓库仍需先确认清单');
+});
+
 test('renderPrompt 对不存在的场景安全返回', () => {
   const result = renderPrompt(allScenes, 'nope', {});
   assert.equal(result.prompt, '');

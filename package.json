@@ -1,6 +1,6 @@
 {
   "name": "prompt-workbench",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "跨 AI 的提示词工作台：场景 -> 追问 -> 成品提示词。MCP Server / Skill / Web 共享同一份场景数据。",
