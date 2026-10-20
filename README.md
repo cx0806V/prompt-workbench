@@ -108,6 +108,42 @@ npm run deploy
 > **你**：帮我写份项目总结报告。
 > **AI**：*调用 `recommend_scene`* → 匹配到「写作 / 把一句话要求变成写作提示词」，然后调用 `get_questionnaire` 开始逐个问你。
 
+## 作为 Skill 安装（离线兜底，不需要 MCP）
+
+仓库里的 [`skills/prompt-workbench/`](skills/prompt-workbench) 是**从同一份场景数据自动生成**的 Skill 包（23 个文件 / 33 KB）：
+
+```
+skills/prompt-workbench/
+├─ SKILL.md                        # 流程与规则（渐进式披露的入口）
+└─ references/
+   ├─ scenes-index.md              # 20 个场景索引
+   ├─ sources.md                   # 来源与致谢
+   └─ scenes/<id>.md               # 每个场景的问题清单 + 模板 + 来源
+```
+
+**装进 Claude Code / CodeBuddy**（把整个目录拷到 skills 目录）：
+
+```powershell
+# Windows
+Copy-Item -Recurse skills\prompt-workbench "$env:USERPROFILE\.claude\skills\"
+```
+```bash
+# macOS / Linux
+cp -r skills/prompt-workbench ~/.claude/skills/
+```
+
+装好后在对话里说「帮我把这个需求说清楚」，Skill 会按场景逐个提问并渲染提示词。
+
+**WorkBuddy / 其他平台**：把 `SKILL.md` 作为技能说明、`references/` 作为知识文件提交到对应平台。⚠️ 各平台技能格式与审核规则不同，以官方文档为准。
+
+**生成方式（不要手改）**：
+
+```bash
+npm run build:skills
+```
+
+CI 会重新生成并比对：**技能包和场景数据不一致就会失败**，所以不存在「场景改了、Skill 忘了更新」的漂移。
+
 ## 工具
 
 | 工具 | 作用 |

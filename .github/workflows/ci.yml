@@ -16,6 +16,12 @@ jobs:
       - name: 零依赖测试
         run: npm test
 
+      - name: 校验生成产物未漂移（SOURCES.md / Skill 包）
+        run: |
+          npm run build:sources
+          npm run build:skills
+          git diff --exit-code -- SOURCES.md skills/
+
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

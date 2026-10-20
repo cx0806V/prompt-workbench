@@ -8,6 +8,7 @@
     "start": "node bin/serve.mjs",
     "test": "node --test \"tests/*.test.mjs\"",
     "build:sources": "node scripts/build-sources.mjs",
+    "build:skills": "node scripts/build-skills.mjs",
     "bundle": "node scripts/bundle-worker.mjs",
     "deploy": "node scripts/deploy-cf.mjs"
   },
