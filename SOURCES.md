@@ -12,6 +12,18 @@
 | 把任务变成 AI 能执行的开发任务 | dair-ai/Prompt-Engineering-Guide | 分隔符分区、输出格式约束、要求模型先复述任务 | 拆成 任务 / 环境 / 完成标准 / 禁区 / 约定 五个固定区 |
 | 把一句话要求变成写作提示词 | f/awesome-chatgpt-prompts | 角色设定 + 禁止空话的约束写法 | 角色换成「删空话的写作助手」，禁止项改成中文常见套话清单 |
 | 把一句话要求变成写作提示词 | dair-ai/Prompt-Engineering-Guide | 给出参考材料、限定只用已提供事实 | 把「材料」设为必填项，模板里硬性规定不许补编数字 |
+| 报错了，帮我定位 | dair-ai/Prompt-Engineering-Guide | 把复杂任务拆成「先分析、再执行」的链式步骤 | 把调试拆成定位→验证→修复三段，并禁止跳过定位直接改代码 |
+| 报错了，帮我定位 | anthropics/prompt-eng-interactive-tutorial | 让模型先复述任务、指令与数据分离 | 模板第 1 步强制复述问题，并把「现象/环境/复现」分成独立区块 |
+| 帮我审这段代码 | dair-ai/Prompt-Engineering-Guide | 用明确输出格式约束模型、分级组织结论 | 把审查结果固定成三级 + 每条三段式结构，避免只给「好/不好」 |
+| 帮我审这段代码 | promptfoo/promptfoo | 断言式检查清单 | 把「必须改/建议改」当成断言分级，限制条数，防止刷屏 |
+| 这段代码该重构了，给我一个计划 | dair-ai/Prompt-Engineering-Guide | 复杂任务拆链（chaining）与分步执行 | 把重构拆成「可单独提交的 3–6 步」，每步强制测试全绿 |
+| 这段代码该重构了，给我一个计划 | ckelsoe/prompt-architect | 先选框架、再填约束，避免模型自由发挥 | 模板先固定「诊断→分步→风险→不做」，再让模型填内容 |
+| 帮我想测试用例 | promptfoo/promptfoo | 矩阵式用例 + 断言（assert）驱动的评测 | 把测试用例表做成矩阵，并要求给最难用例写断言代码 |
+| 帮我想测试用例 | zhouzilai626/clarify-idea-skill | 用白话写「怎么算验收通过」 | 每个用例必须有可观察的预期结果，不许写「正常」两个字 |
+| 要对接一个第三方 API，怎么开始 | dair-ai/Prompt-Engineering-Guide | 结构化输出 + 用分隔符定义输入区域 | 把「调用链路/鉴权/示例/错误/验证」固定为五段输出 |
+| 要对接一个第三方 API，怎么开始 | f/prompts.chat | 角色设定（资深后端工程师）提升领域口吻 | 只借角色设定一段，其余规则全部按本项目重写 |
+| 让 AI 把这段代码讲清楚 | langgptai/LangGPT | 结构化提示词模块（Role / Workflow / Output） | 借它的模块化结构，把讲解拆成结论、调用链、数据结构、取舍四块 |
+| 让 AI 把这段代码讲清楚 | anthropics/prompt-eng-interactive-tutorial | 要求模型先给结论、再给证据，减少幻觉 | 规定每节必须带行号佐证，看不出来就明说 |
 
 ## 说明
 
