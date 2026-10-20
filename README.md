@@ -57,9 +57,18 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cx0806V/prompt-workbench)
 
-> ⚠️ 仓库公开后按钮才生效。部署完成后你得到一个自己的地址：
-> `https://<worker>.<account>.workers.dev/mcp`
-> 免费额度足够个人使用；**推广程度高时建议先部署到自己账号**，避免公共服务被刷。
+> 点按钮后：登录 Cloudflare → 授权 → 它会**复制一份仓库到你自己的账号**（不会改动这个仓库），并在你账号下创建一个 Worker。
+> 完成后你得到一个自己的地址：`https://<worker>.<你的子域>.workers.dev/mcp`
+> 需要：Cloudflare 账号（免费）+ 完成邮箱验证；第一次会让你设一个 `workers.dev` 子域。
+> 如果按钮打不开，用下面的 **Fork + GitHub Actions** 方式，或者本地命令行部署。
+
+| 方式 | 适合 | 需要 | 耗时 |
+| --- | --- | --- | --- |
+| 点上面的 Deploy 按钮 | 大多数人 | Cloudflare 账号 | ~2 分钟 |
+| Fork + 配两个 Secret（见「自动部署」） | 想要 push 自动上线的人 | GitHub + Cloudflare | ~5 分钟 |
+| 本地 `npm run deploy` | 开发者 / 不想用 CI | Node ≥ 20 + Cloudflare token | ~3 分钟 |
+
+> 不部署也行：直接用线上实例，或者本地 `npm start`（零依赖）。
 
 ## 快速开始（本地，30 秒）
 
@@ -73,7 +82,7 @@ npm start
 不需要 `npm install`——本项目零依赖，Node ≥ 20 直接跑。
 
 ```bash
-npm test              # 20 项测试
+npm test              # 36 项测试
 npm run build:sources # 从场景数据重新生成 SOURCES.md
 npm run bundle        # 打成单文件 Worker（dist/worker.js）
 ```
@@ -258,7 +267,7 @@ tests/             零依赖测试（node --test）
 ## 路线图
 
 - [x] 核心引擎 + MCP Server（零依赖）
-- [x] **20 个场景** + 20 项测试（场景数据改动会被测试自动校验）
+- [x] **20 个场景** + 36 项测试（场景数据改动会被测试自动校验）
 - [x] 来源自动生成（`SOURCES.md`）
 - [ ] Skill 包自动生成（同一份数据 → Claude / WorkBuddy Skill）
 - [ ] 网页工作台（左侧对话 + 右侧定义卡实时生长）
