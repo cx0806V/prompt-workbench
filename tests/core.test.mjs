@@ -113,6 +113,10 @@ test('matchScenes 能把一句话匹配到场景', () => {
   assert.ok(requirement.length > 0);
   assert.equal(requirement[0].id, 'requirement-clarify');
 
+  const review = matchScenes(allScenes, '帮我审一下这段代码');
+  assert.ok(review.length > 0, '口语描述也应能匹配');
+  assert.equal(review[0].id, 'code-review');
+
   assert.deepEqual(matchScenes(allScenes, '完全无关的一句话zzz'), []);
   assert.deepEqual(matchScenes(allScenes, ''), []);
 });

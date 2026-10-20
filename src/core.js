@@ -113,10 +113,23 @@ export function getQuestionnaire(scenes, id) {
   };
 }
 
+/** 中文二字组，用于模糊匹配（英文/数字跳过）。 */
+function bigrams(text) {
+  const chars = Array.from(String(text || ''));
+  const result = new Set();
+  for (let i = 0; i < chars.length - 1; i += 1) {
+    const pair = chars[i] + chars[i + 1];
+    if (/[\u4e00-\u9fa5]{2}/.test(pair)) result.add(pair);
+  }
+  return result;
+}
+
 /** 关键词匹配场景，返回按相关性排序的候选（给「我只有一句话，用哪个场景」用）。 */
 export function matchScenes(scenes, text) {
   const query = String(text || '').trim();
   if (!query) return [];
+  const queryBigrams = bigrams(query);
+
   return scenes
     .map((scene) => {
       let score = 0;
@@ -126,6 +139,13 @@ export function matchScenes(scenes, text) {
       for (const keyword of scene.keywords || []) {
         if (keyword && query.includes(keyword)) score += 2;
       }
+      // 兜底：关键词没命中时，用二字组重合度判断（中文口语描述常常不含关键词）
+      const sceneText = [scene.title, scene.category, scene.whenToUse, (scene.keywords || []).join(' ')].join(' ');
+      let shared = 0;
+      for (const pair of bigrams(sceneText)) {
+        if (queryBigrams.has(pair)) shared += 1;
+      }
+      if (shared >= 3) score += Math.min(shared, 6);
       return { scene: toSummary(scene), score };
     })
     .filter((item) => item.score > 0)

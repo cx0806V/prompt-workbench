@@ -91,8 +91,8 @@ function callTool(scenes, params = {}) {
     case 'list_scenes':
       return textResult({ scenes: listScenes(scenes, args) });
     case 'recommend_scene': {
-      const matches = matchScenes(scenes, args.text);
-      return textResult({ matches, hint: matches.length ? '选一个场景，调用 get_questionnaire' : '没有匹配的场景' });
+      const matches = matchScenes(scenes, args.text).slice(0, 3);
+      return textResult({ matches, hint: matches.length ? '选一个场景，调用 get_questionnaire' : '没有匹配的场景，可以调用 list_scenes 看看有哪些' });
     }
     case 'get_questionnaire': {
       const questionnaire = getQuestionnaire(scenes, args.sceneId);

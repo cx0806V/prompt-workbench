@@ -8,6 +8,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-2025--06--18-blue.svg)](https://modelcontextprotocol.io)
 
+> **线上服务已上线**：`https://prompt-workbench.cx200809-2022.workers.dev`
+> 直接打开 `/health` 可看到 `{"ok":true,"sceneCount":20}`，MCP 端点是 `/mcp`。可以自建（一键部署见下），也可以直接用这个公共实例。
+
 ---
 
 ## 为什么做这个
@@ -54,7 +57,20 @@ npm start
 ```bash
 npm test              # 20 项测试
 npm run build:sources # 从场景数据重新生成 SOURCES.md
+npm run bundle        # 打成单文件 Worker（dist/worker.js）
 ```
+
+### 手动部署（不需要 npm / wrangler / Git 集成）
+
+如果 Deploy 按钮或 Git 集成不可用，这条命令可以绕过它们，直接把 Worker 传到 Cloudflare：
+
+```powershell
+$env:CF_API_TOKEN = "你的令牌"      # 权限：Account → Workers Scripts → Edit
+$env:CF_ACCOUNT_ID = "你的账户ID"
+npm run deploy
+```
+
+脚本会：打包 → 上传 script → 开启 `workers.dev` 访问，全程无交互。
 
 ## 在 AI 客户端里使用
 
@@ -65,13 +81,14 @@ npm run build:sources # 从场景数据重新生成 SOURCES.md
   "mcpServers": {
     "prompt-workbench": {
       "type": "http",
-      "url": "https://<your-worker>.workers.dev/mcp"
+      "url": "https://prompt-workbench.cx200809-2022.workers.dev/mcp"
     }
   }
 }
 ```
 
 > 只支持 stdio 的老客户端：用 `mcp-remote` 之类做 HTTP→stdio 桥接。⚠️ 各客户端支持情况以官方文档为准。
+> 想用自己部署的实例，把 URL 换成你的 `<worker>.<子域>.workers.dev/mcp`。
 
 典型对话：
 
