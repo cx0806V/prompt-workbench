@@ -24,6 +24,29 @@
 | 要对接一个第三方 API，怎么开始 | f/prompts.chat | 角色设定（资深后端工程师）提升领域口吻 | 只借角色设定一段，其余规则全部按本项目重写 |
 | 让 AI 把这段代码讲清楚 | langgptai/LangGPT | 结构化提示词模块（Role / Workflow / Output） | 借它的模块化结构，把讲解拆成结论、调用链、数据结构、取舍四块 |
 | 让 AI 把这段代码讲清楚 | anthropics/prompt-eng-interactive-tutorial | 要求模型先给结论、再给证据，减少幻觉 | 规定每节必须带行号佐证，看不出来就明说 |
+| 把这个 bug 写成能复现的 issue | dair-ai/Prompt-Engineering-Guide | 用固定结构约束输出、把猜测与事实分开 | 把 issue 结构写成固定五段，并强制标注「猜测」段 |
+| 把这个 bug 写成能复现的 issue | zhouzilai626/clarify-idea-skill | 用「怎么判它正常」的口语化验收思路 | 把预期/实际写成对照句，要求能被第三方复现 |
+| 它太慢了，怎么优化 | dair-ai/Prompt-Engineering-Guide | 让模型按步骤推理、先收集证据再下结论 | 把「先测量」设为输出第 1 步，禁止直接给优化方案 |
+| 它太慢了，怎么优化 | promptfoo/promptfoo | 用可量化指标而不是感觉来评估 | 要求每个方案标注预期收益量级与代价 |
+| 帮我做一次安全自查 | dair-ai/Prompt-Engineering-Guide | 风险分级与可验证输出 | 强制每条风险都给「验证方法」，避免只列名词 |
+| 帮我做一次安全自查 | ttmouse/requirements-clarifier | 最少追问 + 默认假设的交互模型 | 借它的「先确认范围再展开」思路，把反问压到 4 个 |
+| 把这个项目部署上线（带自动测试） | dair-ai/Prompt-Engineering-Guide | 分步执行 + 明确的输出格式 | 把部署拆成「结论/首次步骤/CI/验证/回滚」五段固定输出 |
+| 把这个项目部署上线（带自动测试） | promptfoo/promptfoo | CI 里跑校验的思路 | CI 部分只保留「push 后跑测试」这一件事，避免臃肿 |
+| 这个技术选型，帮我做决定 | ckelsoe/prompt-architect | 先选框架、再填内容，避免模型泛泛而谈 | 强制用 ADR 框架输出，禁止开放式回答 |
+| 这个技术选型，帮我做决定 | dair-ai/Prompt-Engineering-Guide | 不确定信息要显式标注 | 表格里所有数字必须标来源或用「待核实」 |
+| 这堆数据，帮我分析出结论 | dair-ai/Prompt-Engineering-Guide | 把任务拆成可执行步骤、要求给依据 | 强制「指标定义→质量检查→步骤→结论+证据」四段 |
+| 这堆数据，帮我分析出结论 | promptfoo/promptfoo | 用可验证的断言代替主观判断 | 每个结论必须带支撑数字，否则不许写 |
+| 帮我调研这几个东西，给个结论 | dair-ai/Prompt-Engineering-Guide | 明确输出格式、区分事实与推测 | 强制「结论→对比表→适用/不适用→依据→验证」结构 |
+| 帮我调研这几个东西，给个结论 | clarify-idea-skill | 把模糊问题收窄成能判断的问题 | 第一个问题就要求具体到对象，防止范围过大 |
+| 帮我排一个学新技术的计划 | dair-ai/Prompt-Engineering-Guide | 从基础到进阶的分层路径 | 借「分层学习」结构，但把每一层绑上可验证产物 |
+| 帮我排一个学新技术的计划 | anthropics/prompt-eng-interactive-tutorial | 每章带练习与失败模式 | 每阶段强制配「最常见的坑 + 检验方式」 |
+| 把这个任务交给 AI Agent 去执行 | anthropics/skills | SKILL.md 式的任务说明与执行约束写法 | 借「目标+规则+验收」结构，改成 Agent 任务说明模板 |
+| 把这个任务交给 AI Agent 去执行 | obra/superpowers | 先澄清再执行、分块确认的 Agent 工作法 | 把「先复述再动手 + 检查点」写进执行规则 |
+| 帮我写技术文档 / README | f/prompts.chat | 角色设定与「先大纲后正文」的写作流程 | 借角色与流程，禁止空话的规则换成中文常见套话清单 |
+| 帮我写技术文档 / README | dair-ai/Prompt-Engineering-Guide | 限定只使用给定事实、输出格式约束 | 强制「数字只能用提供的」，缺的地方标待补充 |
+| 把我的任务变成一段提示词 | langgptai/LangGPT | 结构化提示词模块（Role / Profile / Rules / Workflow） | 压缩成 6 个必填区块，并要求总长不超过 300 字 |
+| 把我的任务变成一段提示词 | ckelsoe/prompt-architect | 框架选择 + 评分 + 渐进追问 | 把「以前常犯的错」变成约束区块，替代评分环节 |
+| 把我的任务变成一段提示词 | dair-ai/Prompt-Engineering-Guide | 角色、分隔符、输出格式、自检 | 直接落到模板的 6 个区块里 |
 
 ## 说明
 
