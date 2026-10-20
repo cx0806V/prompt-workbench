@@ -220,16 +220,6 @@ main { max-width: 1240px; margin: 0 auto; padding: 10px 20px 60px; }
   cursor: pointer;
 }
 .composer button:disabled { opacity: 0.45; cursor: not-allowed; }
-.composer #mic {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 17px;
-  padding: 0 14px;
-  border-radius: 10px;
-}
-.composer #mic:hover { color: var(--text); border-color: var(--accent); }
-.composer #mic.listening { color: #fff; border-color: #ff8f8f; background: rgba(255, 143, 143, 0.16); }
 
 /* ---------- 定义卡 ---------- */
 .card-body { padding: 14px 16px; overflow-y: auto; flex: 1; }

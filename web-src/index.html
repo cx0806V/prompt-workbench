@@ -23,7 +23,7 @@
       <div class="picker-head">
         <h2>选一个场景</h2>
         <span class="count" id="picker-count">纯前端 · 无需登录 · 不花一分钱</span>
-        <input id="search" class="search" type="search" placeholder="输入你要做的事：改 bug、写方案、审代码…">
+        <input id="search" class="search" type="search" placeholder="搜索场景：调试 / 审查 / 需求 / 部署…">
       </div>
       <div id="scene-grid" class="scene-grid"></div>
     </section>
@@ -33,14 +33,12 @@
         <div class="chat-head">
           <strong id="workbench-title">场景</strong>
           <span class="pill">一次一个问题</span>
-          <button id="tts" type="button">🔇 朗读关</button>
           <button id="restart" type="button">重来</button>
           <button id="switch" type="button">换场景</button>
         </div>
         <div id="messages" class="messages"></div>
         <form class="composer" id="composer" autocomplete="off">
-          <input id="answer" type="text" placeholder="用大白话回答；有选项就回数字…">
-          <button id="mic" type="button" title="语音输入">🎤</button>
+          <input id="answer" type="text" placeholder="用大白话回答，越具体越好…">
           <button id="send" type="submit">发送</button>
         </form>
       </div>

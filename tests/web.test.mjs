@@ -34,16 +34,12 @@ test('页面包含工作台三块结构', () => {
   assert.ok(html.includes('需求定义卡'), '缺少定义卡标题');
 });
 
-test('页面支持语音输入与朗读开关', () => {
-  assert.ok(html.includes('id="mic"'), '缺少语音输入按钮');
-  assert.ok(html.includes('id="tts"'), '缺少朗读开关');
-  assert.ok(html.includes('webkitSpeechRecognition'), '缺少语音识别实现');
-  assert.ok(html.includes('SpeechSynthesisUtterance'), '缺少语音播报实现');
-});
-
-test('页面支持数字选择（1/2/3/4）', () => {
-  assert.ok(html.includes('也可以直接回数字'), '缺少数字选择提示');
-  assert.ok(html.includes('Number(value)'), '缺少数字转选项逻辑');
+test('按用户要求移除了语音输入 / 朗读 / 数字选择', () => {
+  assert.ok(!html.includes('id="mic"'), '不应再有语音输入按钮');
+  assert.ok(!html.includes('id="tts"'), '不应再有朗读开关');
+  assert.ok(!html.includes('webkitSpeechRecognition'), '不应再有语音识别代码');
+  assert.ok(!html.includes('SpeechSynthesisUtterance'), '不应再有语音播报代码');
+  assert.ok(!html.includes('也可以直接回数字'), '不应再有数字选择提示');
 });
 
 test('搜索同时支持精确与模糊匹配', () => {
