@@ -12,7 +12,8 @@
     "build:skills": "node scripts/build-skills.mjs",
     "build:web": "node scripts/build-web.mjs",
     "bundle": "node scripts/bundle-worker.mjs",
-    "deploy": "node scripts/deploy-cf.mjs"
+    "deploy": "npx --yes wrangler deploy",
+    "deploy:api": "node scripts/deploy-cf.mjs"
   },
   "engines": {
     "node": ">=20"

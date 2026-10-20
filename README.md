@@ -70,6 +70,9 @@
 
 > 不部署也行：直接用线上实例，或者本地 `npm start`（零依赖）。
 
+> **一键部署流程里 Cloudflare 会自动填好两条命令，保持默认即可**：
+> 构建命令 `npm run build`（重新生成来源表 / Skill / 网页）、部署指令 `npm run deploy`（= `npx wrangler deploy`）。
+
 ## 快速开始（本地，30 秒）
 
 ```bash
@@ -87,17 +90,20 @@ npm run build:sources # 从场景数据重新生成 SOURCES.md
 npm run bundle        # 打成单文件 Worker（dist/worker.js）
 ```
 
-### 手动部署（不需要 npm / wrangler / Git 集成）
+### 手动部署（不需要 wrangler）
 
 如果 Deploy 按钮或 Git 集成不可用，这条命令可以绕过它们，直接把 Worker 传到 Cloudflare：
 
 ```powershell
 $env:CF_API_TOKEN = "你的令牌"      # 权限：Account → Workers Scripts → Edit
 $env:CF_ACCOUNT_ID = "你的账户ID"
-npm run deploy
+npm run deploy:api
 ```
 
 脚本会：打包 → 上传 script → 开启 `workers.dev` 访问，全程无交互。
+
+> 注：`npm run deploy` 是给 Cloudflare 一键部署流程用的标准命令（`npx wrangler deploy`）；
+> `npm run deploy:api` 是不依赖 wrangler 的备用路径。
 
 ### 自动部署（push 即上线）
 
