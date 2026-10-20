@@ -73,6 +73,9 @@
 > **一键部署流程里 Cloudflare 会自动填好两条命令，保持默认即可**：
 > 构建命令 `npm run build`（重新生成来源表 / Skill / 网页）、部署指令 `npm run deploy`（= `npx wrangler deploy`）。
 
+> ✅ **2026-10-20 实测通过**：点按钮 → 连 GitHub → 输入任意项目名 → 部署，全程约 24 秒，产物为 `https://<项目名>.<子域>.workers.dev`。
+> 部署日志里可能出现两条**警告**（`未能匹配工人姓名` / `workers_dev 不在 wrangler.toml`），**不影响部署**：Worker 名以你填的项目名为准，`workers.dev` 默认开启。
+
 ## 快速开始（本地，30 秒）
 
 ```bash
