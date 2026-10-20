@@ -222,7 +222,8 @@ CI 会重新生成并比对：**技能包和场景数据不一致就会失败**�
 
 1. 在 `data/scenes/` 新建 `your-scene.js`：导出包含 `id / title / category / whenToUse / keywords / questions / template / sources` 的对象；
 2. 在 `data/scenes/index.js` 里 import 并加进数组；
-3. `npm test` —— 测试会自动校验：id 合法、`questions[].key` 在模板里有 `{{占位符}}`、`sources` 非空。
+3. `npm run build` —— 一条命令重新生成 `SOURCES.md`、Skill 包、网页（三处都由场景数据生成）；
+4. `npm test` —— 测试会自动校验：id 合法、`questions[].key` 在模板里有 `{{占位符}}`、`sources` 非空。
 
 ```js
 export default {
