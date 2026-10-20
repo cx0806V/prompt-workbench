@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>prompt-workbench · 提示词工作台</title>
+  <meta name="description" content="选场景 → 被追问几句 → 拿到一段能直接用的提示词。20 个技术场景，纯前端，无需登录。">
+  <style>:root {
+  --bg: #0b1020;
+  --bg-soft: #121933;
+  --panel: #151d3a;
+  --line: #26305a;
+  --text: #e6e9f5;
+  --muted: #98a2c4;
+  --accent: #5b8cff;
+  --accent-soft: #1d2a55;
+  --good: #4cc38a;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(1200px 600px at 20% -10%, #1a2350 0%, var(--bg) 55%);
+  color: var(--text);
+  font: 15px/1.65 "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.site-header {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 26px 20px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 16px;
+}
+.site-header h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.2px;
+}
+.site-header .tagline { color: var(--muted); font-size: 14px; }
+.site-header .spacer { flex: 1; }
+.site-header .links { font-size: 13px; color: var(--muted); display: flex; gap: 14px; }
+
+main { max-width: 1240px; margin: 0 auto; padding: 10px 20px 60px; }
+
+/* ---------- 场景选择 ---------- */
+.picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 14px 0 18px;
+}
+.picker-head h2 { margin: 0; font-size: 17px; }
+.picker-head .count { color: var(--muted); font-size: 13px; }
+.search {
+  margin-left: auto;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 14px;
+  color: var(--text);
+  min-width: 240px;
+  outline: none;
+}
+.search:focus { border-color: var(--accent); }
+
+.scene-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.scene-card {
+  text-align: left;
+  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 15px;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+  font: inherit;
+}
+.scene-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.scene-card .top { display: flex; align-items: center; gap: 8px; }
+.scene-card .icon { font-size: 18px; }
+.scene-card .title { font-weight: 600; font-size: 14.5px; }
+.scene-card .when { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+.scene-card .meta { margin-top: 10px; font-size: 12px; color: var(--muted); display: flex; gap: 10px; }
+.scene-card .cat {
+  background: var(--accent-soft);
+  color: #a9bfff;
+  border-radius: 999px;
+  padding: 1px 9px;
+}
+.empty { color: var(--muted); padding: 30px 0; }
+
+/* ---------- 工作台 ---------- */
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+.hidden { display: none !important; }
+
+.chat, .card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.chat-head, .card-head {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.chat-head strong, .card-head strong { font-size: 14px; }
+.chat-head .pill {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: auto;
+}
+.chat-head button, .card-head button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.chat-head button:hover, .card-head button:hover { color: var(--text); border-color: var(--accent); }
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bubble {
+  max-width: 86%;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 14px;
+  animation: pop 0.16s ease-out;
+}
+@keyframes pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.bubble.assistant { background: var(--accent-soft); border: 1px solid #2b3c72; align-self: flex-start; }
+.bubble.user { background: #1f2a4f; align-self: flex-end; }
+.bubble .why { color: var(--muted); font-size: 12px; margin-top: 6px; }
+.bubble .examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bubble .examples button {
+  background: transparent;
+  border: 1px dashed #3b4d85;
+  color: #b9c6ee;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.bubble .examples button:hover { border-color: var(--accent); color: #fff; }
+.bubble .skip {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 0 0;
+}
+.bubble.small { font-size: 12.5px; color: var(--muted); background: transparent; border: none; align-self: center; }
+
+.composer {
+  border-top: 1px solid var(--line);
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.12);
+}
+.composer input {
+  flex: 1;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 13px;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.composer input:focus { border-color: var(--accent); }
+.composer button {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.composer button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- 定义卡 ---------- */
+.card-body { padding: 14px 16px; overflow-y: auto; flex: 1; }
+.progress {
+  height: 6px;
+  background: #1b2445;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.25s ease; }
+.progress-label { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+
+.slots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.slot {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.015);
+  animation: pop 0.18s ease-out;
+}
+.slot .label { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
+.slot .label .req { color: #ff8f8f; }
+.slot .value { margin-top: 4px; font-size: 13.5px; word-break: break-word; }
+.slot.pending .value { color: #5f6b93; font-style: italic; }
+.slot.filled { border-color: #2c4272; background: rgba(91, 140, 255, 0.07); }
+
+.result { margin-top: 16px; }
+.result h3 { font-size: 13px; margin: 0 0 8px; color: var(--good); }
+.result pre {
+  margin: 0;
+  background: #0d1428;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.result .actions { display: flex; gap: 8px; margin-top: 10px; }
+.result .actions button {
+  flex: 1;
+  border-radius: 10px;
+  padding: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text);
+}
+.result .actions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.result .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+footer {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+footer code { background: #101733; padding: 1px 6px; border-radius: 6px; }
+
+@media (max-width: 880px) {
+  .workbench { grid-template-columns: 1fr; }
+  .chat, .card { min-height: 0; }
+  .messages { max-height: 46vh; }
+  .card-body { max-height: none; }
+  .site-header { padding-top: 18px; }
+  .search { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <h1>prompt-workbench</h1>
+    <span class="tagline">选场景 → 被追问几句 → 拿到一段能直接用的提示词</span>
+    <span class="spacer"></span>
+    <nav class="links">
+      <a href="https://github.com/cx0806V/prompt-workbench">GitHub</a>
+      <a href="https://prompt-workbench.cx200809-2022.workers.dev/mcp">MCP</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="picker">
+      <div class="picker-head">
+        <h2>选一个场景</h2>
+        <span class="count" id="picker-count">纯前端 · 无需登录 · 不花一分钱</span>
+        <input id="search" class="search" type="search" placeholder="搜索：调试 / 审查 / 需求 / 部署…">
+      </div>
+      <div id="scene-grid" class="scene-grid"></div>
+    </section>
+
+    <section id="workbench" class="workbench hidden">
+      <div class="chat">
+        <div class="chat-head">
+          <strong id="workbench-title">场景</strong>
+          <span class="pill">一次一个问题</span>
+          <button id="restart" type="button">重来</button>
+          <button id="switch" type="button">换场景</button>
+        </div>
+        <div id="messages" class="messages"></div>
+        <form class="composer" id="composer" autocomplete="off">
+          <input id="answer" type="text" placeholder="用大白话回答，越具体越好…">
+          <button id="send" type="submit">发送</button>
+        </form>
+      </div>
+
+      <aside class="card">
+        <div class="card-head">
+          <strong>需求定义卡</strong>
+          <span class="pill">实时生长</span>
+        </div>
+        <div class="card-body">
+          <div class="progress"><i id="progress-bar"></i></div>
+          <div id="progress-label" class="progress-label"></div>
+          <ul id="slots" class="slots"></ul>
+          <div id="result" class="result hidden">
+            <h3>成品提示词</h3>
+            <pre id="result-prompt"></pre>
+            <div class="actions">
+              <button id="copy" class="primary" type="button">复制提示词</button>
+            </div>
+            <div class="hint">粘到任何 AI 里就能用。想让 AI 直接调用这套流程？把 MCP 地址填进客户端，见 GitHub README。</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <footer>
+    场景数据与渲染逻辑来自同一个仓库：<code>data/scenes/</code> + <code>src/core.js</code>。
+    页面由 <code>npm run build:web</code> 生成，不要手改 <code>docs/index.html</code>。
+  </footer>
+
+  <script>/**
+ * 纯函数核心。
+ *
+ * 约束（防屎山三条规则之一）：本文件不依赖 Node / 浏览器 / Cloudflare 的任何 API，
+ * 因此 MCP Server、Skill 构建脚本、网页工作台三个壳可以共用同一份逻辑，且能直接单测。
+ */
+
+const VERSION = '0.1.0';
+
+const SCENE_FIELDS = ['id', 'title', 'category', 'whenToUse', 'questions', 'template', 'sources'];
+const QUESTION_FIELDS = ['key', 'ask'];
+
+/** 校验单个场景，返回错误字符串数组；空数组 = 合法。 */
+function validateScene(scene) {
+  const errors = [];
+  if (!scene || typeof scene !== 'object' || Array.isArray(scene)) {
+    return ['场景必须是一个对象'];
+  }
+  for (const field of SCENE_FIELDS) {
+    if (scene[field] === undefined || scene[field] === null || scene[field] === '') {
+      errors.push(`缺少字段 ${field}`);
+    }
+  }
+  if (scene.id && !/^[a-z0-9][a-z0-9-]*$/.test(scene.id)) {
+    errors.push(`id 只能用小写字母、数字、连字符：${scene.id}`);
+  }
+  if (scene.sources !== undefined && (!Array.isArray(scene.sources) || scene.sources.length === 0)) {
+    errors.push('sources 不能为空：借鉴了谁必须写清楚');
+  }
+  if (!Array.isArray(scene.questions) || scene.questions.length === 0) {
+    errors.push('questions 必须是非空数组');
+    return errors;
+  }
+  const keys = new Set();
+  scene.questions.forEach((question, index) => {
+    for (const field of QUESTION_FIELDS) {
+      if (!question || !question[field]) errors.push(`questions[${index}] 缺少 ${field}`);
+    }
+    if (!question || !question.key) return;
+    if (keys.has(question.key)) errors.push(`questions[${index}] 的 key 重复：${question.key}`);
+    keys.add(question.key);
+    if (typeof scene.template === 'string' && !scene.template.includes(`{{${question.key}}}`)) {
+      errors.push(`模板里没有占位符 {{${question.key}}}`);
+    }
+  });
+  return errors;
+}
+
+/** 校验场景集合：逐个校验 + id 唯一。返回 { ok, errors }。 */
+function validateScenes(scenes) {
+  const errors = [];
+  if (!Array.isArray(scenes) || scenes.length === 0) {
+    return { ok: false, errors: ['场景集合必须是非空数组'] };
+  }
+  const ids = new Set();
+  for (const scene of scenes) {
+    const sceneErrors = validateScene(scene);
+    for (const error of sceneErrors) errors.push(`${scene && scene.id ? scene.id : '未知场景'}: ${error}`);
+    if (scene && scene.id) {
+      if (ids.has(scene.id)) errors.push(`id 重复：${scene.id}`);
+      ids.add(scene.id);
+    }
+  }
+  return { ok: errors.length === 0, errors };
+}
+
+/** 列出场景（不含完整模板，保证返回体积小）。 */
+function listScenes(scenes, options = {}) {
+  const { category, keyword } = options;
+  return scenes
+    .filter((scene) => {
+      if (category && scene.category !== category) return false;
+      if (keyword) {
+        const haystack = [scene.title, scene.category, scene.whenToUse, ...(scene.keywords || [])].join(' ');
+        if (!haystack.includes(keyword)) return false;
+      }
+      return true;
+    })
+    .map(toSummary);
+}
+
+function toSummary(scene) {
+  return {
+    id: scene.id,
+    title: scene.title,
+    category: scene.category,
+    icon: scene.icon || '',
+    whenToUse: scene.whenToUse,
+    questionCount: Array.isArray(scene.questions) ? scene.questions.length : 0,
+  };
+}
+
+/** 取单个场景。 */
+function findScene(scenes, id) {
+  return scenes.find((scene) => scene.id === id) || null;
+}
+
+/** 取某场景的问卷（给 AI 用来逐步提问）。 */
+function getQuestionnaire(scenes, id) {
+  const scene = findScene(scenes, id);
+  if (!scene) return null;
+  return {
+    sceneId: scene.id,
+    title: scene.title,
+    whenToUse: scene.whenToUse,
+    questions: scene.questions.map((question) => ({
+      key: question.key,
+      ask: question.ask,
+      required: question.required !== false,
+      examples: question.examples || [],
+      why: question.why || '',
+    })),
+  };
+}
+
+/** 中文二字组，用于模糊匹配（英文/数字跳过）。 */
+function bigrams(text) {
+  const chars = Array.from(String(text || ''));
+  const result = new Set();
+  for (let i = 0; i < chars.length - 1; i += 1) {
+    const pair = chars[i] + chars[i + 1];
+    if (/[\u4e00-\u9fa5]{2}/.test(pair)) result.add(pair);
+  }
+  return result;
+}
+
+/** 关键词匹配场景，返回按相关性排序的候选（给「我只有一句话，用哪个场景」用）。 */
+function matchScenes(scenes, text) {
+  const query = String(text || '').trim();
+  if (!query) return [];
+  const queryBigrams = bigrams(query);
+
+  return scenes
+    .map((scene) => {
+      let score = 0;
+      if (scene.title && query.includes(scene.title)) score += 5;
+      if (scene.category && query.includes(scene.category)) score += 2;
+      if (scene.whenToUse && query.length >= 4 && scene.whenToUse.includes(query)) score += 3;
+      for (const keyword of scene.keywords || []) {
+        if (keyword && query.includes(keyword)) score += 2;
+      }
+      // 兜底：关键词没命中时，用二字组重合度判断（中文口语描述常常不含关键词）
+      const sceneText = [scene.title, scene.category, scene.whenToUse, (scene.keywords || []).join(' ')].join(' ');
+      let shared = 0;
+      for (const pair of bigrams(sceneText)) {
+        if (queryBigrams.has(pair)) shared += 1;
+      }
+      if (shared >= 3) score += Math.min(shared, 6);
+      return { scene: toSummary(scene), score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.scene);
+}
+
+/**
+ * 渲染成品提示词。
+ * 返回 { sceneId, prompt, missing, warnings }：
+ *  - missing：必填但没给的 key
+ *  - warnings：非必填缺失 / 未知 key 等提示
+ */
+function renderPrompt(scenes, id, answers = {}) {
+  const scene = findScene(scenes, id);
+  if (!scene) return { sceneId: id, prompt: '', missing: [], warnings: [`场景不存在：${id}`] };
+
+  const missing = [];
+  const warnings = [];
+  const known = new Set(scene.questions.map((question) => question.key));
+
+  for (const question of scene.questions) {
+    const value = answers ? answers[question.key] : undefined;
+    const empty = value === undefined || value === null || String(value).trim() === '';
+    if (empty) {
+      if (question.required !== false) missing.push(question.key);
+      else warnings.push(`可选项未填：${question.key}`);
+    }
+  }
+  for (const key of Object.keys(answers || {})) {
+    if (!known.has(key)) warnings.push(`未知字段被忽略：${key}`);
+  }
+
+  let prompt = scene.template;
+  for (const question of scene.questions) {
+    const raw = answers ? answers[question.key] : undefined;
+    const value = raw === undefined || raw === null || String(raw).trim() === ''
+      ? '（未提供，请先向用户确认）'
+      : String(raw).trim();
+    prompt = prompt.split(`{{${question.key}}}`).join(value);
+  }
+
+  return { sceneId: scene.id, prompt: prompt.trim(), missing, warnings };
+}
+
+/** 场景库统计，给 /health 和 README 用。 */
+function sceneStats(scenes) {
+  const categories = {};
+  for (const scene of scenes) {
+    categories[scene.category] = (categories[scene.category] || 0) + 1;
+  }
+  return {
+    version: VERSION,
+    sceneCount: scenes.length,
+    categories,
+    questionCount: scenes.reduce((sum, scene) => sum + scene.questions.length, 0),
+  };
+}
+</script>
+  <script>window.__SCENES__ = [{"id":"requirement-clarify","title":"把模糊需求说清楚","category":"需求","icon":"🎯","whenToUse":"脑子里有个想法但说不清要做成什么样；或者别人只给你一句话，你不知道从哪开始。","keywords":["需求","澄清","验收","产品","功能","prd","做什么","想法","方案"],"questions":[{"key":"goal","ask":"你最终想要一个什么东西？一句话，说得很粗糙也没关系。","why":"目标不清，后面所有问答都会跑偏。","required":true,"examples":["做一个能自动整理会议记录的小工具","给班级做一个手机上能看的作业看板"]},{"key":"user","ask":"这东西给谁用？他是谁、在什么场景下会用？","why":"「给谁用」决定取舍，比任何功能列表都重要。","required":true,"examples":["给我自己，写周报的时候","给班里 40 个同学，交作业和查进度"]},{"key":"scope","ask":"最小能用的一版，必须有哪些东西？最多列 3 条。","why":"不砍范围，第一版永远做不完。","required":true,"examples":["能新建任务、能勾完成、能按人筛选"]},{"key":"accept","ask":"做到什么程度算成功？写 1–2 条能当场验证的标准。","why":"验收标准是唯一能终结扯皮的东西。","required":true,"examples":["把一个班的 40 条作业在 3 分钟内录完","任何人都能不看说明用手机打开"]},{"key":"constraint","ask":"有什么不能做、做不到的？时间、预算、技术栈、别人已经做过的东西。","why":"约束不是限制，是最快的排除法。","required":false,"examples":["不能花钱买服务器","不要做登录和权限"]}],"template":"你是一位资深需求分析师。请把下面这份粗糙需求，收敛成一份可以直接交给开发者执行的需求说明。\n\n## 已知信息\n- 目标：{{goal}}\n- 使用者与场景：{{user}}\n- 最小可用范围：{{scope}}\n- 验收标准：{{accept}}\n- 限制与不做的事：{{constraint}}\n\n## 你的任务\n1. 先用一句话重述这个需求：要做什么 + 给谁 + 为了什么。\n2. 找出上面信息里缺失或互相矛盾的地方，最多 3 条，每条给出你的默认假设并标注「假设」。\n3. 输出结构化需求说明，包含四部分：背景 / 范围（做什么、不做什么）/ 使用者与场景 / 验收标准（每条写成「当……时，……，即为通过」）。\n4. 不要编造我没有提供的事实；拿不准的地方写「待确认」，不要用行业常识替我拍板。\n\n## 输出格式\nMarkdown，二级标题分段，正文不超过 600 字。","outputFormat":"markdown","sources":[{"repo":"ttmouse/skills · requirements-clarifier","what":"6 槽位 Definition Card + 最少追问 + 默认假设","how":"压缩成 5 个问题，去掉术语，改成中文大白话；默认假设合并进模板第 2 步"},{"repo":"ChatPRD","what":"验收标准与用户故事的写法","how":"不单独设「用户故事」字段，把验收标准并进第 4 问，保持问题数最少"},{"repo":"dair-ai/Prompt-Engineering-Guide","what":"明确任务、指定输出格式、用分隔符分区","how":"模板固定成「已知信息 / 任务 / 输出格式」三段"}]},{"id":"coding-task","title":"把任务变成 AI 能执行的开发任务","category":"开发","icon":"🛠️","whenToUse":"要把一个开发任务交给 AI 写代码，但说太粗它乱改、说太细自己又费劲。","keywords":["开发","写代码","重构","修 bug","仓库","实现","任务","技术"],"questions":[{"key":"task","ask":"要做什么？一句话说清要改什么、加什么。","why":"AI 最怕的不是任务难，是任务边界不清。","required":true,"examples":["给项目加一个导出 CSV 的按钮","把登录逻辑从 session 改成 token"]},{"key":"context","ask":"技术栈和现有结构是什么？关键文件/目录叫什么？","why":"不给上下文，AI 会自己发明一套结构。","required":true,"examples":["Node + Express，路由在 routes/，前端是原生 JS"]},{"key":"done","ask":"怎么算做完了？列出可验证的检查项（能跑什么命令、点什么按钮）。","why":"这是唯一能防止 AI「说完成了其实没完成」的东西。","required":true,"examples":["npm test 全绿","点导出按钮能下载到 CSV，中文不乱码"]},{"key":"noGo","ask":"哪些东西不能碰？不能改的文件、必须保持兼容的行为、不能加的依赖。","why":"不写禁区，AI 会顺手重构你没让它动的地方。","required":true,"examples":["不要改数据库表结构","不要新增依赖"]},{"key":"style","ask":"有没有必须遵守的代码风格或约定？","why":"风格不一致是后续维护成本的主要来源。","required":false,"examples":["用 ESM，不要 CommonJS","函数不超过 50 行"]}],"template":"你是一位严谨的高级工程师。请先理解任务，再按下面的约束执行；不确定的地方先问我，不要猜。\n\n## 任务\n{{task}}\n\n## 现有环境\n{{context}}\n\n## 完成标准（必须逐条验证）\n{{done}}\n\n## 禁区（不能改动的地方）\n{{noGo}}\n\n## 代码约定\n{{style}}\n\n## 执行规则\n1. 先复述你理解的任务，并列出你打算改动的文件清单，等我确认后再动手。\n2. 只改清单内的文件；需要改清单外的东西，先说明原因并征求同意。\n3. 每完成一步，报告「当前状态 + 下一步」。\n4. 完成后逐条对照「完成标准」自检，给出每一条的验证方式。\n5. 不要为了「顺便优化」重构无关代码。","outputFormat":"markdown","sources":[{"repo":"f/awesome-chatgpt-prompts","what":"角色扮演 + 明确职责的写法","how":"只借角色设定一段，执行规则换成本项目自己的「先确认再动手」机制"},{"repo":"dair-ai/Prompt-Engineering-Guide","what":"分隔符分区、输出格式约束、要求模型先复述任务","how":"拆成 任务 / 环境 / 完成标准 / 禁区 / 约定 五个固定区"}]},{"id":"document-writing","title":"把一句话要求变成写作提示词","category":"写作","icon":"✍️","whenToUse":"要写报告、总结、通知、文案，但直接丢给 AI 得到的东西又空又套话。","keywords":["写作","报告","总结","文案","汇报","通知","文章","ppt","稿件"],"questions":[{"key":"topic","ask":"要写什么？主题是什么、大概要写几段？","why":"主题说得越具体，套话越少。","required":true,"examples":["写一份本月项目总结，500 字","写一条 150 字的群通知，说明明天停课"]},{"key":"audience","ask":"写给谁看？他的身份和你希望他看完做什么？","why":"同一个内容写给老师和写给同事，写法完全不同。","required":true,"examples":["写给班主任，希望他同意调整交作业时间","写给同班同学，让他们按时提交"]},{"key":"material","ask":"有哪些必须用上的事实、数字或原文？直接贴给我。","why":"没有材料，AI 只能写空话；有材料，它才能写得具体。","required":true,"examples":["本月上线 3 个功能、修复 12 个问题、测试 47 项全过"]},{"key":"format","ask":"要多长、什么格式？标题要不要、分不分点？","why":"格式不清，结果就得反复重写。","required":false,"examples":["三段式，每段不超过 100 字","只要一个 Markdown 列表，5 条以内"]},{"key":"tone","ask":"语气要求？正式/口语、直接/委婉，要不要避免某些词。","why":"语气决定它像不像你写的。","required":false,"examples":["正式但别太官腔","不要用「赋能」「闭环」这类词"]}],"template":"你是一位擅长把空话删干净的写作助手。请按下面的要求写，不要凑字数。\n\n## 主题与篇幅\n{{topic}}\n\n## 读者与目的\n{{audience}}\n\n## 必须用上的材料（只能用这些事实，不要补编）\n{{material}}\n\n## 格式\n{{format}}\n\n## 语气\n{{tone}}\n\n## 写作规则\n1. 先用一句话说明你打算怎么写（结构顺序），再写正文。\n2. 每条判断都要落在上面提供的材料上；材料里没有的数字不要出现。\n3. 不用「随着……的发展」「在当今时代」这类开头，不用空泛的形容词堆砌。\n4. 写完后自查：删掉任何一句，读者会损失信息吗？不会就删。\n\n## 输出格式\n直接给成品，不要解释。","outputFormat":"markdown","sources":[{"repo":"f/awesome-chatgpt-prompts","what":"角色设定 + 禁止空话的约束写法","how":"角色换成「删空话的写作助手」，禁止项改成中文常见套话清单"},{"repo":"dair-ai/Prompt-Engineering-Guide","what":"给出参考材料、限定只用已提供事实","how":"把「材料」设为必填项，模板里硬性规定不许补编数字"}]},{"id":"debug","title":"报错了，帮我定位","category":"开发","icon":"🐛","whenToUse":"代码跑不起来、报错看不懂、或者行为和你预期不一样，卡了半小时以上。","keywords":["报错","调试","bug","异常","不生效","跑不起来","crash","error"],"questions":[{"key":"symptom","ask":"现象是什么？把报错原文/关键日志直接贴上来。","why":"报错原文比任何转述都准。","required":true,"examples":["TypeError: Cannot read properties of undefined (reading \"map\")，指向 app.js 第 42 行"]},{"key":"env","ask":"运行环境和技术栈是什么？版本号、命令、在哪个系统上跑的。","why":"同一个报错在不同版本里原因完全不同。","required":true,"examples":["Node 22 + Vite 6，Windows 11，npm run dev 时出现"]},{"key":"repro","ask":"怎么触发？能不能稳定复现？大概多久出现一次。","why":"不能复现的问题，先要做的是缩小范围。","required":true,"examples":["打开首页就必现","连续点三次保存才出现，偶尔"]},{"key":"tried","ask":"你已经试过什么？结果分别是什么？","why":"避免 AI 让你重复做一遍你做过的事。","required":false,"examples":["清过缓存、换过浏览器、把那段代码注释掉就好了"]},{"key":"expect","ask":"你期望它做什么？现在实际做了什么？","why":"「不符合预期」必须写出两边，否则无法判断哪边错。","required":true,"examples":["期望列表显示 3 条数据，实际是空白"]}],"template":"你是一位资深调试工程师。先定位，再给方案；在我确认原因之前，不要直接重写我的代码。\n\n## 现象\n{{symptom}}\n\n## 环境\n{{env}}\n\n## 复现方式\n{{repro}}\n\n## 期望 vs 实际\n{{expect}}\n\n## 已尝试\n{{tried}}\n\n## 你的任务\n1. 用一句话复述问题（不是复述我的话，是你的理解）。\n2. 按可能性从高到低列最多 3 个原因，每个原因给一个**能在 1 分钟内做的验证动作**。\n3. 说明你判断的依据（哪个日志/哪行逻辑让你这么认为）。\n4. 如果信息不够，直接问我最少需要补充的 1–2 条，不要瞎猜。\n5. 只有在我确认原因后，才给修改方案；方案要说明会影响哪些文件。\n\n## 禁止\n- 不要一次性贴出「全部改好的代码」。\n- 不要建议「重装环境 / 重装依赖」作为第一步。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"把复杂任务拆成「先分析、再执行」的链式步骤","how":"把调试拆成定位→验证→修复三段，并禁止跳过定位直接改代码"},{"repo":"anthropics/prompt-eng-interactive-tutorial","what":"让模型先复述任务、指令与数据分离","how":"模板第 1 步强制复述问题，并把「现象/环境/复现」分成独立区块"}]},{"id":"code-review","title":"帮我审这段代码","category":"开发","icon":"🔍","whenToUse":"写完一段代码不确定质量，或者合并前想让人挑一遍问题。","keywords":["代码审查","review","code review","检查代码","合并","pr","质量"],"questions":[{"key":"code","ask":"把要审的代码贴上来（或说明改动涉及哪几个文件）。","why":"审查的对象必须是具体代码，不是描述。","required":true,"examples":["贴 app.js 里 handleSubmit 那一段，约 40 行"]},{"key":"goal","ask":"这段代码要做什么？一句话说清它的目的。","why":"不知道目的，只能审出风格问题，审不出正确性问题。","required":true,"examples":["把表单数据转成接口需要的格式并提交"]},{"key":"concern","ask":"你最担心哪方面？正确性 / 安全 / 性能 / 可维护性 / 全部。","why":"审查是有优先级的，全都要等于没重点。","required":true,"examples":["安全和正确性，性能暂时不管"]},{"key":"standard","ask":"有什么团队规范或技术约束？（语言版本、必须用的库、不许用的写法）","why":"没有规范，AI 会按它的口味改你的风格。","required":false,"examples":["用 ESM，不许新增依赖，函数不超过 50 行"]}],"template":"你是一位严格的代码审查者。按下面的优先级审，不要重写我的代码。\n\n## 目的\n{{goal}}\n\n## 代码\n{{code}}\n\n## 我最关心\n{{concern}}\n\n## 规范约束\n{{standard}}\n\n## 输出要求\n1. 先给一句总体判断：可以合并 / 改完再合并 / 建议重做。\n2. 问题分三级列出，每条必须给「问题 → 为什么是问题 → 具体怎么改（可给关键片段，不要贴整段重写）」：\n   - 🔴 必须改（正确性、安全、数据丢失风险）\n   - 🟡 建议改（可维护性、可读性、边界处理）\n   - ⚪ 不用改（风格偏好，说明为什么不影响）\n3. 指出 1 个我可能没意识到、但值得知道的问题（比如隐含假设、并发、时区、编码）。\n4. 如果代码里信息不足，直接问我，不要假设。\n\n## 禁止\n- 不要因为「可以更优雅」就要求重写。\n- 不要一次列出超过 10 条问题，优先挑真正重要的。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"用明确输出格式约束模型、分级组织结论","how":"把审查结果固定成三级 + 每条三段式结构，避免只给「好/不好」"},{"repo":"promptfoo/promptfoo","what":"断言式检查清单","how":"把「必须改/建议改」当成断言分级，限制条数，防止刷屏"}]},{"id":"refactor-plan","title":"这段代码该重构了，给我一个计划","category":"开发","icon":"🧱","whenToUse":"代码越改越难受、加个功能要动五个地方、或者想整理但不敢动。","keywords":["重构","refactor","解耦","技术债","拆分","整理代码","架构"],"questions":[{"key":"target","ask":"要重构的是哪部分？文件/函数/模块，大概多少行。","why":"重构范围决定风险，范围不清就没法排步骤。","required":true,"examples":["app.js 里 300 行的渲染逻辑，现在一个函数干五件事"]},{"key":"pain","ask":"现在最疼的是哪三件事？（具体到「每次改 X 都要动 Y」）","why":"重构必须对准具体疼痛，否则就是纯改风格。","required":true,"examples":["加一个字段要改 5 处","改样式经常漏掉导出逻辑"]},{"key":"scope","ask":"哪些不能动？对外接口、数据库结构、必须保持的行为。","why":"重构的边界越清楚，越敢动手。","required":true,"examples":["接口返回结构不能变，测试必须一直保持全绿"]},{"key":"done","ask":"怎么验证重构成功？能跑什么命令、点什么按钮。","why":"没有验证方式的重构，等于赌博。","required":true,"examples":["npm test 全绿 + 手动点一遍三条主流程"]},{"key":"constraint","ask":"时间/技术约束？能不能引入新依赖、能不能暂停其他开发。","why":"决定是「一步到位」还是「分十次小步走」。","required":false,"examples":["两天内做完，不许加依赖"]}],"template":"你是一位经历过多次线上事故的重构顾问。请给计划，不要给「全部重写」。\n\n## 重构对象\n{{target}}\n\n## 现在的痛点\n{{pain}}\n\n## 不能动的边界\n{{scope}}\n\n## 成功标准\n{{done}}\n\n## 约束\n{{constraint}}\n\n## 输出要求\n1. **现状诊断**：指出造成疼痛的结构性原因（最多 3 条），每条对应一个代码位置。\n2. **分步计划**：拆成 3–6 步，每一步必须满足：\n   - 单独可提交、可回滚\n   - 做完这一步，测试仍然全绿\n   - 说明这一步改动哪些文件、大约多少行\n3. **风险**：哪一步最可能出问题，出问题时怎么判断、怎么回滚。\n4. **不做的事**：明确列出这次不碰的部分。\n5. 如果信息不足，先问我，不要假设我的代码结构。\n\n## 禁止\n- 不要提出「推倒重写」作为方案。\n- 不要在没有测试覆盖的情况下建议大规模改动；如果有这种风险，先告诉我该怎么补测试。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"复杂任务拆链（chaining）与分步执行","how":"把重构拆成「可单独提交的 3–6 步」，每步强制测试全绿"},{"repo":"ckelsoe/prompt-architect","what":"先选框架、再填约束，避免模型自由发挥","how":"模板先固定「诊断→分步→风险→不做」，再让模型填内容"}]},{"id":"test-design","title":"帮我想测试用例","category":"开发","icon":"🧪","whenToUse":"功能写完了不知道怎么测，怕漏掉边界；或者要给别人的代码补测试。","keywords":["测试","用例","test","边界","验收","覆盖率","异常"],"questions":[{"key":"feature","ask":"要测的是什么功能？输入是什么、输出应该是什么。","why":"不知道输入输出，用例只能写成空话。","required":true,"examples":["上传 CSV 并解析成表格，输入是文件，输出是行数组"]},{"key":"rules","ask":"有哪些业务规则、限制、校验？比如长度限制、格式要求、必填项。","why":"规则就是测试用例的来源。","required":true,"examples":["文件 ≤ 5MB、必须是 UTF-8、必须有表头"]},{"key":"edge","ask":"你最怕哪种情况出事？（空数据、超大输入、并发、网络失败……）","why":"把恐惧变成用例，是最有效的补测方法。","required":false,"examples":["文件里混了英文和中文，怕乱码"]},{"key":"stack","ask":"当前测试环境？用什么框架、怎么跑。","why":"决定用例写不写得出可执行的代码。","required":false,"examples":["Node 自带 node:test，npm test 跑"]}],"template":"你是一位擅长找边界条件的测试工程师。请设计测试用例，不要写空泛的「验证功能正常」。\n\n## 被测功能\n{{feature}}\n\n## 业务规则与限制\n{{rules}}\n\n## 我最担心的场景\n{{edge}}\n\n## 测试环境\n{{stack}}\n\n## 输出要求\n1. **用例表**：分三类列\n   - 正常路径（Happy path）\n   - 边界值（空、满、刚好超限、格式边界）\n   - 异常路径（非法输入、依赖失败、超时）\n   每条包含：编号 / 前置条件 / 输入 / 预期结果 / 优先级（P0/P1/P2）。\n2. **最小可跑清单**：如果时间只够跑 5 条，跑哪 5 条，为什么。\n3. **建议的断言写法**：针对最难的那 2 条用例，给出可执行的断言代码（用上面的测试环境）。\n4. 指出我给的规则里**互相矛盾或缺失**的地方，不要替我补充假设。\n\n## 禁止\n- 不要写「测试系统稳定性」这类无法执行的用例。\n- 不要为了凑数量编造不存在的业务规则。","outputFormat":"markdown","sources":[{"repo":"promptfoo/promptfoo","what":"矩阵式用例 + 断言（assert）驱动的评测","how":"把测试用例表做成矩阵，并要求给最难用例写断言代码"},{"repo":"zhouzilai626/clarify-idea-skill","what":"用白话写「怎么算验收通过」","how":"每个用例必须有可观察的预期结果，不许写「正常」两个字"}]},{"id":"api-integration","title":"要对接一个第三方 API，怎么开始","category":"开发","icon":"🔌","whenToUse":"要接支付、地图、AI、短信、开放平台等外部接口，文档看着头大。","keywords":["api","对接","接口","第三方","sdk","鉴权","token","webhook"],"questions":[{"key":"target","ask":"要对接哪个服务？把文档链接或关键字段贴上来。","why":"不同服务的鉴权和错误码差异很大，不能靠常识。","required":true,"examples":["DeepSeek API（OpenAI 兼容），要调 chat/completions"]},{"key":"need","ask":"你要完成什么业务流程？用户做什么、你调几次接口、最后得到什么。","why":"接口文档是零件，业务流程才是你要的东西。","required":true,"examples":["用户点「生成」，我调一次接口，把结果存到本地并显示"]},{"key":"constraint","ask":"有什么限制？免费额度、请求频率、不能在浏览器暴露 key、必须后端代理。","why":"安全和成本问题必须在写代码之前定。","required":true,"examples":["纯前端项目，key 不能暴露，所以可能需要代理"]},{"key":"fail","ask":"失败了怎么办？重试几次、给用户看什么、要不要降级。","why":"外部接口一定会失败，处理方式决定用户体验。","required":false,"examples":["失败就提示重试，最多 2 次，不要自动扣费"]}],"template":"你是一位做过很多第三方对接的后端工程师。先给方案骨架，再给代码，每一步都要能验证。\n\n## 对接对象\n{{target}}\n\n## 业务目标\n{{need}}\n\n## 限制条件\n{{constraint}}\n\n## 失败处理\n{{fail}}\n\n## 输出要求\n1. **调用链路**：用户动作 → 我的服务 → 第三方接口，画成步骤清单，标出每一步的输入输出。\n2. **鉴权方案**：key 放在哪、怎么传、为什么这样安全；如果不能在客户端暴露，给出最小代理方案。\n3. **最小可运行示例**：先用 curl 或伪代码验证一次请求，列出必须的字段；不要直接给完整业务代码。\n4. **错误处理**：列出这个接口最常见的 3 类错误（鉴权失败 / 参数错误 / 限流），各自的处理方式。\n5. **验证清单**：我按什么顺序自测，才能在不写完整功能的情况下确认接口通了。\n6. 文档里我没给全的字段，标「待确认」并告诉我怎么查，不要编造。\n\n## 禁止\n- 不要编造接口字段名或错误码。\n- 不要把 key 写进前端代码示例里。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"结构化输出 + 用分隔符定义输入区域","how":"把「调用链路/鉴权/示例/错误/验证」固定为五段输出"},{"repo":"f/prompts.chat","what":"角色设定（资深后端工程师）提升领域口吻","how":"只借角色设定一段，其余规则全部按本项目重写"}]},{"id":"code-explain","title":"让 AI 把这段代码讲清楚","category":"开发","icon":"📖","whenToUse":"接手别人的代码、看开源项目源码、或者自己以前写的代码看不懂了。","keywords":["看懂","解释","源码","reading","讲解","学习","调用链","看不懂"],"questions":[{"key":"code","ask":"把要看的代码贴上来（或给仓库路径 + 入口文件）。","why":"讲解必须基于真实代码，不是基于名字猜。","required":true,"examples":["贴出 src/render.js 全文，约 120 行"]},{"key":"purpose","ask":"你为什么读它？要改它、要学它的写法、还是要找 bug。","why":"目的不同，讲解的深度和侧重点完全不同。","required":true,"examples":["我要在它上面加一个功能，得先搞清数据怎么流动"]},{"key":"level","ask":"要讲到什么程度？一句话概括 / 逐段讲 / 讲到能自己改。","why":"「讲清楚」没有标准，必须自己定。","required":true,"examples":["讲到我能自己改，关键数据结构要讲明白"]},{"key":"known","ask":"你已经看懂哪部分了？哪里开始卡住？","why":"从卡点开始讲，比从第一行讲起省一半时间。","required":false,"examples":["前面配置能看懂，从 handleSubmit 开始不知道数据去哪了"]}],"template":"你是一位善于讲清复杂代码的工程师。讲解要给出证据，不要凭函数名猜。\n\n## 代码\n{{code}}\n\n## 我读它的目的\n{{purpose}}\n\n## 需要讲到的深度\n{{level}}\n\n## 我已经看懂/卡在哪\n{{known}}\n\n## 输出要求\n1. **一句话结论**：这段代码整体在干什么。\n2. **调用链**：从入口到出口，按顺序列出关键函数，每个函数一句话说明它负责什么。\n3. **关键数据结构**：列出最重要的 1–3 个对象/变量，说明它的字段从哪来、到哪去。\n4. **设计取舍**：这段代码为什么这样组织，有没有明显的替代方案。\n5. **可改进点**：只列真正影响维护的 1–2 条。\n6. 每一节都用「结论先行 + 代码行号佐证」的写法；如果代码里看不出来，明确说「这里看不出来，需要看 X」。\n\n## 禁止\n- 不要逐行翻译代码。\n- 不要把没在代码里出现的行为说成事实。","outputFormat":"markdown","sources":[{"repo":"langgptai/LangGPT","what":"结构化提示词模块（Role / Workflow / Output）","how":"借它的模块化结构，把讲解拆成结论、调用链、数据结构、取舍四块"},{"repo":"anthropics/prompt-eng-interactive-tutorial","what":"要求模型先给结论、再给证据，减少幻觉","how":"规定每节必须带行号佐证，看不出来就明说"}]},{"id":"bug-report","title":"把这个 bug 写成能复现的 issue","category":"开发","icon":"📝","whenToUse":"要提 issue / 向别人报障 / 交给 AI 修，但你现在只会说「它坏了」。","keywords":["issue","bug报告","复现","提issue","报障","反馈","提交"],"questions":[{"key":"problem","ask":"哪里坏了？用一句话说，不要带情绪。","why":"一句话说清的 bug，才有可能被快速修。","required":true,"examples":["点保存后页面刷新，数据没存上"]},{"key":"steps","ask":"复现步骤？按顺序写，一步一个动作。","why":"能按步骤复现，是 bug 报告的第一价值。","required":true,"examples":["1 打开设置页 2 改昵称 3 点保存"]},{"key":"expect","ask":"预期是什么？实际是什么？两句话。","why":"没有对照，维护者无法判断是 bug 还是设计如此。","required":true,"examples":["预期昵称被保存并显示；实际刷新后变回旧昵称"]},{"key":"env","ask":"环境和版本？系统 / 浏览器 / 应用版本 / 提交号。","why":"同一 bug 在不同版本原因不同。","required":true,"examples":["Windows 11 / Edge 141 / 版本 v0.3 / commit ae8093b"]},{"key":"evidence","ask":"有截图、日志、报错原文吗？直接贴。","why":"证据能省掉一整轮来回追问。","required":false,"examples":["控制台有 POST /api/save 500，附截图"]}],"template":"你是一位开源项目维护者。请把我下面的描述整理成一份高质量的 issue，我可以直接复制提交。\n\n## 我遇到的现象\n{{problem}}\n\n## 复现步骤\n{{steps}}\n\n## 预期 vs 实际\n{{expect}}\n\n## 环境\n{{env}}\n\n## 证据\n{{evidence}}\n\n## 输出要求\n1. **标题**：一句话，包含「在什么条件下 / 什么坏了」，不要用「求助」「急」。\n2. 按这个结构输出：环境 / 复现步骤（编号，每步一个动作）/ 预期行为 / 实际行为 / 证据 / 影响范围（多少人、什么场景受影响）。\n3. 最后加一段「我猜测的原因」——标成**猜测**，不要说得像结论。\n4. 去掉所有情绪化表达（「崩溃了」「气死」），只留可验证的事实。\n\n## 禁止\n- 不要编造我没有提供的日志或版本号。\n- 不要替我把「猜测」写成「已知」。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"用固定结构约束输出、把猜测与事实分开","how":"把 issue 结构写成固定五段，并强制标注「猜测」段"},{"repo":"zhouzilai626/clarify-idea-skill","what":"用「怎么判它正常」的口语化验收思路","how":"把预期/实际写成对照句，要求能被第三方复现"}]},{"id":"perf-opt","title":"它太慢了，怎么优化","category":"开发","icon":"⚡","whenToUse":"页面加载慢、接口返回慢、数据一多就卡，但不知道瓶颈在哪。","keywords":["性能","优化","太慢","卡","加载慢","缓存","耗时","延迟"],"questions":[{"key":"symptom","ask":"慢在哪？加载慢 / 点击后要等 / 查询慢 / 数据一多就卡。","why":"不同慢法，瓶颈位置完全不同。","required":true,"examples":["点「查询」后要等 4 秒才出结果，数据 1 万行时更慢"]},{"key":"numbers","ask":"有具体数字吗？多慢、数据量多大、在什么设备上。","why":"「很慢」不能优化，「4 秒」才能优化。","required":true,"examples":["本机 4.2 秒，手机 8 秒；数据表 1 万行"]},{"key":"arch","ask":"技术栈和链路是什么？请求打到哪、数据存在哪。","why":"瓶颈可能在前端、网络、后端或数据库，链路决定从哪查。","required":true,"examples":["浏览器 → Worker → D1 数据库，一次查询返回 1 万行"]},{"key":"constraint","ask":"能改什么、不能改什么？（能加缓存吗、能改表结构吗、有预算吗）","why":"有些优化要花钱或改架构，先定边界。","required":false,"examples":["不能加付费服务，可以加缓存，表结构尽量不动"]}],"template":"你是一位性能工程师。先教我测量，再谈优化；没有测量数据之前不要下结论。\n\n## 现象\n{{symptom}}\n\n## 已有数字\n{{numbers}}\n\n## 技术链路\n{{arch}}\n\n## 约束\n{{constraint}}\n\n## 输出要求\n1. **先测量**：给出 3 个具体测量动作（用什么工具、看哪个指标、预期看到什么），让我先拿到数据。\n2. **瓶颈假设**：按可能性排序最多 3 个，每个给「怎么验证」和「如果是它会看到什么现象」。\n3. **优化方案**：每个方案标注预期收益量级（毫秒/秒）和代价（改多少代码、有没有副作用）。\n4. **优先级**：先做哪个，为什么（优先选能测量到收益、改动小的）。\n5. 明确说明：哪些优化对当前场景**没必要做**，避免过度优化。\n\n## 禁止\n- 不要在没有测量数据的情况下断言瓶颈。\n- 不要一上来就建议加缓存或换框架。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"让模型按步骤推理、先收集证据再下结论","how":"把「先测量」设为输出第 1 步，禁止直接给优化方案"},{"repo":"promptfoo/promptfoo","what":"用可量化指标而不是感觉来评估","how":"要求每个方案标注预期收益量级与代价"}]},{"id":"security-check","title":"帮我做一次安全自查","category":"开发","icon":"🔐","whenToUse":"项目要公开、要给同学/客户用、或者代码里有 key 和用户数据。","keywords":["安全","自查","泄露","key","权限","注入","隐私","xss"],"questions":[{"key":"target","ask":"要自查什么？代码 / 部署配置 / 接口 / 依赖 / key 管理。","why":"安全范围太大，必须先圈定。","required":true,"examples":["一个要公开的纯前端网页 + 一个 Cloudflare Worker"]},{"key":"exposure","ask":"谁会访问它？公开互联网 / 班内 / 只有自己。会不会被爬、被刷。","why":"公开程度决定风险等级。","required":true,"examples":["会发到群里，几百人可能点，也可能被搜索引擎抓到"]},{"key":"data","ask":"有什么敏感数据？key、token、手机号、用户内容。存在哪。","why":"数据在哪，泄露面就在哪。","required":true,"examples":["前端不能有 key；用户填的内容只存在 localStorage"]},{"key":"stack","ask":"技术栈和部署方式，以及最近改过什么。","why":"「最近改过什么」是漏洞最常见的入口。","required":false,"examples":["纯前端 + Worker 代理，最近加了 API 调用"]}],"template":"你是一位应用安全审计员。给我按风险排序的清单，每一项都要能验证，不要说「注意安全」。\n\n## 自查范围\n{{target}}\n\n## 暴露面\n{{exposure}}\n\n## 敏感数据\n{{data}}\n\n## 技术栈\n{{stack}}\n\n## 输出要求\n1. **必须立刻做的 3 件事**：如果不做，明天就可能出事的。\n2. 风险清单，按 🔴高 / 🟡中 / ⚪低 分组，每条包含：\n   - 风险点（具体到文件/配置/接口）\n   - 攻击者会怎么利用（一句话）\n   - **验证方法**（我怎么自己确认它是不是真的有问题）\n   - 修复方式（最小改动）\n3. 最后给「这次不用管」的清单，说明为什么风险可接受。\n4. 涉及前端 key、CORS、注入、依赖漏洞这几类时必须点名检查，如果没有就写「未发现」。\n\n## 禁止\n- 不要输出泛泛的安全原则清单。\n- 不要建议我引入大型安全框架来解决小问题。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"风险分级与可验证输出","how":"强制每条风险都给「验证方法」，避免只列名词"},{"repo":"ttmouse/requirements-clarifier","what":"最少追问 + 默认假设的交互模型","how":"借它的「先确认范围再展开」思路，把反问压到 4 个"}]},{"id":"deploy-ci","title":"把这个项目部署上线（带自动测试）","category":"开发","icon":"🚀","whenToUse":"本地能跑，但不知道怎么发布到网上；或者每次发布都手动，容易漏。","keywords":["部署","上线","ci","发布","github actions","服务器","workers","域名"],"questions":[{"key":"target","ask":"要部署的是什么？纯前端 / 后端服务 / 定时任务。","why":"形态不同，部署方案完全不同。","required":true,"examples":["纯前端网页 + 一个 Cloudflare Worker"]},{"key":"env","ask":"打算部署到哪？免费额度、已有账号、要不要国内可访问。","why":"预算和可访问性直接决定选哪个平台。","required":true,"examples":["GitHub Pages / Cloudflare Workers，全部免费；国内访问要能打开"]},{"key":"template","ask":"现在手动发布要几步？最容易漏哪一步。","why":"自动化的目标就是消灭这些手抖。","required":false,"examples":["推代码 → 打开 Workers 后台 → 点部署；经常忘了先跑测试"]},{"key":"need","ask":"希望自动化做什么？跑测试 / 构建 / 发布 / 通知。","why":"决定 CI 的边界，别一开始就想全自动。","required":true,"examples":["push 后自动跑测试，测试过了自动部署"]}],"template":"你是一位 DevOps 工程师。给我一份能照着做的部署方案：先给结论，再给可复制的命令。\n\n## 部署对象\n{{target}}\n\n## 目标环境与限制\n{{env}}\n\n## 现在的流程与痛点\n{{template}}\n\n## 要自动化的部分\n{{need}}\n\n## 输出要求\n1. **方案结论**：推荐哪个平台、为什么（用免费额度、访问速度、维护成本三点比较）。\n2. **首次部署步骤**：编号，每一步给可直接复制的命令或点击路径；标出「这步会产生什么结果」。\n3. **CI 流程**：给一个最小可用的 GitHub Actions 配置（能跑测试），并说明它什么时候触发。\n4. **验证清单**：部署完成后，按顺序验证哪 3 件事就算成功。\n5. **回滚方式**：出问题怎么退回上一个版本，一条命令或一次点击。\n6. 明确说明哪些步骤**只有在我的账号里才能做**，不要假装你能替我完成。\n\n## 禁止\n- 不要假设我有付费账号或服务器。\n- 不要给超过 30 行的 CI 配置；先跑通最小版。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"分步执行 + 明确的输出格式","how":"把部署拆成「结论/首次步骤/CI/验证/回滚」五段固定输出"},{"repo":"promptfoo/promptfoo","what":"CI 里跑校验的思路","how":"CI 部分只保留「push 后跑测试」这一件事，避免臃肿"}]},{"id":"tech-select","title":"这个技术选型，帮我做决定","category":"开发","icon":"⚖️","whenToUse":"在两个库/框架/方案之间纠结，怕选了之后回不了头。","keywords":["选型","技术选型","对比","选哪个","框架","数据库","adr","纠结"],"questions":[{"key":"decision","ask":"要决定什么？一句话，比如「前端框架选 Vue 还是 React」。","why":"把纠结写成选择题，才有可能做决定。","required":true,"examples":["后端选 Cloudflare D1 还是 Supabase"]},{"key":"options","ask":"候选方案有哪些？包括你现在已有的技术栈。","why":"「保持现状」也是一个选项，常常最优。","required":true,"examples":["A. D1（已绑定 Workers）B. Supabase（免费额度大）C. 不做后端"]},{"key":"criteria","ask":"最重要的 3 个标准是什么？（成本 / 学习成本 / 生态 / 性能 / 锁定风险）","why":"标准不清，对比表就没有意义。","required":true,"examples":["免费、我能学得会、以后换起来不痛苦"]},{"key":"constraint","ask":"有没有硬约束？必须用某个平台、不能花钱、时间只有几天。","why":"硬约束常常直接排除一半选项。","required":false,"examples":["不能花钱，一周内要能上线"]}],"template":"你是一位技术负责人。请按 ADR（架构决策记录）的格式帮我做决定，不要和稀泥。\n\n## 要决定的问题\n{{decision}}\n\n## 候选方案\n{{options}}\n\n## 我的判断标准\n{{criteria}}\n\n## 硬约束\n{{constraint}}\n\n## 输出要求\n1. **决策建议**：先给结论（选哪个 + 一句话理由）。\n2. **对比表**：行是标准，列是候选方案，单元格写具体事实（价格、限额、学习时间），不确定的标「待核实」。\n3. **决策依据**：为什么这个标准权重最高，用我的实际约束解释。\n4. **后果**：选它之后，我会失去什么（锁定、迁移成本、维护负担）。\n5. **放弃的方案**：写清为什么不选，以及什么情况下应该重新考虑它。\n6. **验证方式**：在正式采用前，我用一天时间能做的验证试验是什么。\n\n## 禁止\n- 不要编造价格、限额、性能数字；不确定就标「待核实」。\n- 不要说「都可以，看需求」——必须给推荐。","outputFormat":"markdown","sources":[{"repo":"ckelsoe/prompt-architect","what":"先选框架、再填内容，避免模型泛泛而谈","how":"强制用 ADR 框架输出，禁止开放式回答"},{"repo":"dair-ai/Prompt-Engineering-Guide","what":"不确定信息要显式标注","how":"表格里所有数字必须标来源或用「待核实」"}]},{"id":"data-analysis","title":"这堆数据，帮我分析出结论","category":"数据","icon":"📊","whenToUse":"手上有表格/日志/问卷数据，想知道它说明了什么，但不想只贴个平均数。","keywords":["数据","分析","excel","表格","统计","结论","问卷","csv","sql"],"questions":[{"key":"data","ask":"有什么数据？多少条、有哪些列、来自哪。","why":"列名和来源决定能回答什么问题。","required":true,"examples":["24 份问卷 xlsx，列有：填写时间/年级/常用 AI/最费劲的步骤"]},{"key":"question","ask":"你想回答什么问题？写成一句话的问句。","why":"没有问题，分析就是一堆数字。","required":true,"examples":["学生用 AI 时最费劲的是哪一步"]},{"key":"tools","ask":"你能用什么工具处理？Excel / SQL / Python，或者只能贴给我看。","why":"决定给你的步骤能不能执行。","required":true,"examples":["会用 Excel，Python 不太会"]},{"key":"output","ask":"要什么形式的结论？一段话 / 表格 / 给老师看的报告。","why":"输出形式决定分析深度。","required":false,"examples":["要能放进报告，带 1–2 个关键数字"]}],"template":"你是一位数据分析师。请把问题变成可计算的指标，再给结论；结论必须有证据，也要说局限。\n\n## 数据情况\n{{data}}\n\n## 要回答的问题\n{{question}}\n\n## 我能用的工具\n{{tools}}\n\n## 期望的输出\n{{output}}\n\n## 输出要求\n1. **问题拆解**：把问题转成 2–4 个可计算的指标（每个指标说明怎么算）。\n2. **数据质量检查**：先列出 3 个必须检查的问题（缺失值、重复、口径不一致、样本偏差），并说明检查方法。\n3. **分析步骤**：我用我的工具按顺序做什么，每一步给出可复制的公式或代码。\n4. **结论模板**：每个结论写成「结论 + 支撑数字 + 局限」三句；没有数据支撑的不要写。\n5. **样本局限性**：明确指出这批数据不能推广到什么范围。\n\n## 禁止\n- 不要编造我没提供的数据或数字。\n- 不要把「看起来」写成结论。\n- 不要用平均数掩盖分布（必要时给中位数/分位数）。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"把任务拆成可执行步骤、要求给依据","how":"强制「指标定义→质量检查→步骤→结论+证据」四段"},{"repo":"promptfoo/promptfoo","what":"用可验证的断言代替主观判断","how":"每个结论必须带支撑数字，否则不许写"}]},{"id":"research-compare","title":"帮我调研这几个东西，给个结论","category":"调研","icon":"🧭","whenToUse":"要调研新技术/竞品/方案，但不想看完 20 篇文章还不知道结论。","keywords":["调研","对比","竞品","技术调研","比较","哪个好","选哪个"],"questions":[{"key":"topic","ask":"要调研什么？具体到对象，不要只说「AI 工具」。","why":"范围越窄，结论越有用。","required":true,"examples":["调研 3 个国产 AI 编程助手：CodeBuddy / Trae / 通义灵码"]},{"key":"goal","ask":"调研是为了什么？选型 / 写报告 / 决定要不要做。","why":"目的决定调研深度和输出形式。","required":true,"examples":["决定我自己日常用哪个，以及能不能推荐给同学"]},{"key":"depth","ask":"要多深？快速了解（10 分钟）/ 能下判断（1 小时）/ 深度对比（半天）。","why":"深度不设限，调研会无限膨胀。","required":true,"examples":["能下判断就行，1 小时以内"]},{"key":"sources","ask":"有指定资料吗？官方文档、某篇文章、你自己的试用记录。","why":"优先用一手资料，二手测评很容易错。","required":false,"examples":["官方文档链接 + 我自己用了一周的感受"]}],"template":"你是一位技术调研员。请先给结论，再给依据，并明确说出你不确定的地方。\n\n## 调研对象\n{{topic}}\n\n## 调研目的\n{{goal}}\n\n## 深度要求\n{{depth}}\n\n## 已有资料\n{{sources}}\n\n## 输出要求\n1. **一句话结论**：如果只能选一个，选哪个，为什么。\n2. **对比表**：按我关心的维度（成本、上手难度、适用场景、明显缺点）做表格，每个单元格写具体事实。\n3. **各自最适合的场景**：什么情况下该用 A，什么情况下 B 更好。\n4. **各自不该用的场景**：明确写出反面。\n5. **依据与不确定性**：标注哪些是官方信息、哪些是二手评价、哪些我没核实。\n6. **下一步验证**：给我一个 15 分钟就能做的验证动作，用来确认结论。\n\n## 禁止\n- 不要编造价格、限额、版本号、用户量。\n- 不要把「听人说」写成事实。\n- 不要给超过 6 行的对比表；维度超过 4 个就拆开说明。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"明确输出格式、区分事实与推测","how":"强制「结论→对比表→适用/不适用→依据→验证」结构"},{"repo":"clarify-idea-skill","what":"把模糊问题收窄成能判断的问题","how":"第一个问题就要求具体到对象，防止范围过大"}]},{"id":"learn-tech","title":"帮我排一个学新技术的计划","category":"学习","icon":"🎓","whenToUse":"想学一个新东西（语言/框架/工具），但一打开教程就迷路，学完又不会用。","keywords":["学习","计划","入门","教程","学会","新技术","自学","路线"],"questions":[{"key":"target","ask":"要学什么？具体到版本或具体用法。","why":"「学 Python」和「用 Python 处理 Excel」是两件事。","required":true,"examples":["学 Node + 写一个能跑的命令行工具"]},{"key":"background","ask":"你现在已会什么？哪些相关的基础有、哪些没有。","why":"决定从哪一层开始讲，避免重复或跳步。","required":true,"examples":["会 HTML/CSS/一点 JS，没写过后端，没用过命令行"]},{"key":"time","ask":"每天能投入多少时间？能持续多少天。","why":"计划必须放进真实时间是可行的。","required":true,"examples":["每天 1 小时，两周"]},{"key":"goal","ask":"做到什么算学会？给一个能交付的产物。","why":"「学会」没有标准，产物才有。","required":true,"examples":["能独立写出一个读 CSV 并输出统计的命令行工具"]}],"template":"你是一位带过很多新人的工程师。请按我的真实时间和基础排计划，不要给我一堆教程链接。\n\n## 要学的东西\n{{target}}\n\n## 我的基础\n{{background}}\n\n## 每天可投入时间 / 周期\n{{time}}\n\n## 学会的标准\n{{goal}}\n\n## 输出要求\n1. **第一步先做什么**：只给一个动作，今天就能做（≤30 分钟）。\n2. **阶段计划**：拆成 3–4 个阶段，每阶段包含：\n   - 要解决的问题（为什么学这块）\n   - 每天做什么（一天一件事，不要「看第 1–3 章」）\n   - **可验证的产物**（能跑的东西 / 能输出的结果）\n3. **最常见的坑**：3 条，每条给「出现什么现象就说明掉坑了」。\n4. **检验方式**：怎么在不看教程的情况下，验证自己真的学会了。\n5. 明确说明：哪些内容这个阶段**先不学**，为什么。\n\n## 禁止\n- 不要推荐超过 3 个资源链接。\n- 不要给「7 天精通」这种不现实的安排。\n- 不要把「看教程」当成一个阶段的产物。","outputFormat":"markdown","sources":[{"repo":"dair-ai/Prompt-Engineering-Guide","what":"从基础到进阶的分层路径","how":"借「分层学习」结构，但把每一层绑上可验证产物"},{"repo":"anthropics/prompt-eng-interactive-tutorial","what":"每章带练习与失败模式","how":"每阶段强制配「最常见的坑 + 检验方式」"}]},{"id":"agent-task","title":"把这个任务交给 AI Agent 去执行","category":"开发","icon":"🤖","whenToUse":"想让编码 Agent（CodeBuddy / Cursor / Claude Code 等）帮你做一件完整的事，但怕它乱改。","keywords":["agent","自动执行","交给ai","任务说明","agents.md","claude code","cursor"],"questions":[{"key":"task","ask":"要它做什么？描述最终结果，不要描述步骤。","why":"Agent 需要目标，不需要你替它规划每一步。","required":true,"examples":["给项目加一个导出 CSV 的按钮，并且不破坏现有测试"]},{"key":"repo","ask":"在哪个仓库/目录做？关键文件、入口、怎么跑起来。","why":"Agent 最贵的错误是找错文件、改错地方。","required":true,"examples":["仓库根目录，入口 index.html + app.js，npm test 跑测试"]},{"key":"rules","ask":"禁区是什么？不能改的文件、不能加的依赖、必须保持的行为。","why":"不写禁区，Agent 会顺手重构。","required":true,"examples":["不许改测试文件，不许新增依赖，接口返回结构不能变"]},{"key":"done","ask":"验收标准？能跑什么命令、点什么按钮算完成。","why":"这是 Agent 停止的唯一信号。","required":true,"examples":["npm test 全绿；点导出能下载中文不乱码的 CSV"]},{"key":"checkpoint","ask":"希望它什么时候停下来问你？","why":"事先约定检查点，比事后回滚便宜。","required":false,"examples":["改超过 3 个文件前先告诉我","要装东西前先问我"]}],"template":"你是一个受约束的编码 Agent。请按下面的任务说明执行；每完成一步报告状态，遇到检查点必须停下来等我确认。\n\n## 目标\n{{task}}\n\n## 工作环境\n{{repo}}\n\n## 禁区\n{{rules}}\n\n## 验收标准\n{{done}}\n\n## 检查点\n{{checkpoint}}\n\n## 执行规则\n1. 开始前：用 3 句话复述你理解的目标、你打算改的文件清单、你不打算碰的部分。\n2. 动手前等我确认文件清单（除非清单为空）。\n3. 每次只做清单里的一件事；做完报告「改了什么 / 现在状态 / 下一步」。\n4. 做完后逐条对照验收标准自检，给出每条的证据（命令输出或操作路径）。\n5. 任何需要新增依赖、改数据库结构、改接口的行为，必须先问。\n6. 不相关代码不要顺手优化。\n\n## 交付\n最后输出一段「变更摘要」，我可以直接复制进 commit message。","outputFormat":"markdown","sources":[{"repo":"anthropics/skills","what":"SKILL.md 式的任务说明与执行约束写法","how":"借「目标+规则+验收」结构，改成 Agent 任务说明模板"},{"repo":"obra/superpowers","what":"先澄清再执行、分块确认的 Agent 工作法","how":"把「先复述再动手 + 检查点」写进执行规则"}]},{"id":"tech-doc","title":"帮我写技术文档 / README","category":"写作","icon":"📚","whenToUse":"项目要给人看，但没有 README；或者要写设计文档、接口文档、周报。","keywords":["readme","文档","技术文档","设计文档","接口文档","周报","说明"],"questions":[{"key":"type","ask":"要写哪种？README / 设计文档 / 接口文档 / 周报 / 答辩材料。","why":"不同文档的结构完全不同。","required":true,"examples":["给一个开源仓库写 README"]},{"key":"reader","ask":"给谁看？他们会用它做什么？","why":"读者决定写什么、省略什么。","required":true,"examples":["给路过的人看，30 秒内决定要不要 star"]},{"key":"facts","ask":"必须包含的事实：项目做什么、怎么跑、测试情况、技术栈、局限。","why":"没有事实的文档只能写成空话。","required":true,"examples":["3 个场景 / 20 项测试全过 / 零依赖 / 需要 Node 20+"]},{"key":"length","ask":"要多长？有没有格式要求。","why":"README 写太长没人读，写太短说不清。","required":false,"examples":["README 控制在 150 行内，要有安装命令和截图位置"]}],"template":"你是一位技术写作者。先给大纲让我确认，再写正文；正文里每个判断都要有事实支撑。\n\n## 文档类型\n{{type}}\n\n## 读者与用途\n{{reader}}\n\n## 必须包含的事实\n{{facts}}\n\n## 长度与格式\n{{length}}\n\n## 输出要求\n1. **先给大纲**（5–8 个标题），说明每个部分解决读者的什么问题。\n2. 我确认后再写正文；正文遵守：一句话说清的别写两句，不写「随着……的发展」。\n3. 需要数字的地方只能用我给的，缺的地方写「待补充」，不要编。\n4. 写完做一次自检：删掉任何一段，读者会不会看不懂？不会就删。\n5. 最后列出「读者最可能问的 3 个问题」，并确认文中已能回答。\n\n## 禁止\n- 不要写营销腔和空泛的价值主张。\n- 不要为了完整而堆砌不存在的功能。","outputFormat":"markdown","sources":[{"repo":"f/prompts.chat","what":"角色设定与「先大纲后正文」的写作流程","how":"借角色与流程，禁止空话的规则换成中文常见套话清单"},{"repo":"dair-ai/Prompt-Engineering-Guide","what":"限定只使用给定事实、输出格式约束","how":"强制「数字只能用提供的」，缺的地方标待补充"}]},{"id":"meta-prompt","title":"把我的任务变成一段提示词","category":"提示词","icon":"🪄","whenToUse":"你要让 AI 做一件具体的事，但不知道该怎么开口，或者以前问过效果很一般。","keywords":["提示词","prompt","怎么写","问ai","让我提问","写一段"],"questions":[{"key":"task","ask":"你要 AI 帮你做什么？一句话，说人话。","why":"先有任务，再谈提示词。","required":true,"examples":["帮我把这段会议记录整理成待办清单"]},{"key":"context","ask":"AI 需要知道什么背景？材料、格式要求、你的身份。","why":"模型没有你的上下文，只能猜。","required":true,"examples":["会议记录 200 字左右，我要按负责人分组，输出 Markdown 表格"]},{"key":"output","ask":"你想要什么形状的结果？长度、格式、要不要举例。","why":"输出格式是最容易被忽略、又最容易省时间的一项。","required":true,"examples":["三列：事项 / 负责人 / 截止时间，不超过 10 条"]},{"key":"failure","ask":"以前让 AI 做类似的事，它最常在哪出错？","why":"把已知的坑写进提示词，比事后返工便宜。","required":false,"examples":["它会自己编截止时间，还会漏掉没提负责人的事项"]}],"template":"你是一位提示词工程师。请把我下面的需求，写成一段可以直接复制使用的提示词。\n\n## 我的任务\n{{task}}\n\n## 背景与材料\n{{context}}\n\n## 期望的输出形状\n{{output}}\n\n## AI 以前常犯的错\n{{failure}}\n\n## 要求\n输出的提示词必须包含以下区块，总长不超过 300 字：\n1. **角色**：一句话（做什么领域的什么角色）\n2. **任务**：要它完成的动作\n3. **输入**：用分隔符标出我要提供的内容位置\n4. **输出格式**：精确到结构、长度、字段\n5. **约束**：不许做什么（针对我提到的常见错误）\n6. **自检**：让它在输出前检查一遍什么\n\n最后用一行说明：这段提示词里，哪一句是最关键的。\n\n## 禁止\n- 不要写解释性文字，直接给提示词本体。\n- 不要在提示词里编造我没提供的材料。","outputFormat":"markdown","sources":[{"repo":"langgptai/LangGPT","what":"结构化提示词模块（Role / Profile / Rules / Workflow）","how":"压缩成 6 个必填区块，并要求总长不超过 300 字"},{"repo":"ckelsoe/prompt-architect","what":"框架选择 + 评分 + 渐进追问","how":"把「以前常犯的错」变成约束区块，替代评分环节"},{"repo":"dair-ai/Prompt-Engineering-Guide","what":"角色、分隔符、输出格式、自检","how":"直接落到模板的 6 个区块里"}]}];</script>
+  <script>/* 网页工作台逻辑：纯前端，零依赖。场景数据与渲染逻辑都从仓库里内联进来。 */
+
+(function () {
+  const scenes = window.__SCENES__;
+  const state = {
+    scene: null,
+    index: -1,
+    answers: {},
+    finished: false,
+  };
+
+  const $ = (selector) => document.querySelector(selector);
+  const picker = $('#picker');
+  const grid = $('#scene-grid');
+  const searchInput = $('#search');
+  const workbench = $('#workbench');
+  const messages = $('#messages');
+  const input = $('#answer');
+  const sendButton = $('#send');
+  const cardSlots = $('#slots');
+  const progressBar = $('#progress-bar');
+  const progressLabel = $('#progress-label');
+  const resultBox = $('#result');
+  const resultPre = $('#result-prompt');
+  const copyButton = $('#copy');
+  const restartButton = $('#restart');
+  const switchButton = $('#switch');
+
+  function text(tag, className, content) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (content !== undefined) node.textContent = content;
+    return node;
+  }
+
+  function renderPicker(filter) {
+    const keyword = (filter || '').trim();
+    const visible = keyword ? listScenes(scenes, { keyword }) : scenes;
+    grid.innerHTML = '';
+    if (!visible.length) {
+      grid.appendChild(text('div', 'empty', '没有匹配的场景，换个关键词试试。'));
+      return;
+    }
+    for (const scene of visible) {
+      const card = text('button', 'scene-card');
+      card.type = 'button';
+      card.dataset.id = scene.id;
+      const top = text('div', 'top');
+      top.appendChild(text('span', 'icon', scene.icon || '•'));
+      top.appendChild(text('span', 'title', scene.title));
+      card.appendChild(top);
+      card.appendChild(text('div', 'when', scene.whenToUse));
+      const meta = text('div', 'meta');
+      meta.appendChild(text('span', 'cat', scene.category));
+      meta.appendChild(text('span', '', scene.questions.length + ' 个问题'));
+      card.appendChild(meta);
+      grid.appendChild(card);
+    }
+  }
+
+  function addBubble(role, content, options) {
+    const bubble = text('div', 'bubble ' + role);
+    if (options && options.small) bubble.classList.add('small');
+    bubble.appendChild(text('div', '', content));
+    if (options && options.why) bubble.appendChild(text('div', 'why', options.why));
+    if (options && options.examples && options.examples.length) {
+      const examples = text('div', 'examples');
+      for (const example of options.examples) {
+        const button = text('button', '', example);
+        button.type = 'button';
+        button.addEventListener('click', () => {
+          input.value = example;
+          input.focus();
+        });
+        examples.appendChild(button);
+      }
+      bubble.appendChild(examples);
+    }
+    if (options && options.allowSkip) {
+      const skip = text('button', 'skip', '跳过这一项（可选）');
+      skip.type = 'button';
+      skip.addEventListener('click', () => {
+        state.answers[state.scene.questions[state.index].key] = '';
+        addBubble('user', '（跳过）');
+        renderCard();
+        nextQuestion();
+      });
+      bubble.appendChild(skip);
+    }
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function renderCard() {
+    if (!state.scene) return;
+    const questions = state.scene.questions;
+    const required = questions.filter((question) => question.required !== false);
+    const answeredRequired = required.filter((question) => (state.answers[question.key] || '').trim() !== '');
+    const ratio = required.length ? answeredRequired.length / required.length : 0;
+    progressBar.style.width = Math.round(ratio * 100) + '%';
+    progressLabel.textContent = '必填 ' + answeredRequired.length + ' / ' + required.length +
+      '　可选项 ' + (questions.length - required.length) + ' 个';
+
+    cardSlots.innerHTML = '';
+    for (const question of questions) {
+      const value = (state.answers[question.key] || '').trim();
+      const item = text('li', 'slot ' + (value ? 'filled' : 'pending'));
+      const label = text('div', 'label');
+      label.appendChild(text('span', 'req', question.required === false ? '' : '*'));
+      label.appendChild(text('span', '', question.ask));
+      item.appendChild(label);
+      item.appendChild(text('div', 'value', value || '等待你的回答…'));
+      cardSlots.appendChild(item);
+    }
+  }
+
+  function setComposerEnabled(enabled, placeholder) {
+    input.disabled = !enabled;
+    sendButton.disabled = !enabled;
+    input.placeholder = placeholder || '用大白话回答，越具体越好…';
+    if (enabled) input.focus();
+  }
+
+  function nextQuestion() {
+    const questions = state.scene.questions;
+    state.index += 1;
+    if (state.index >= questions.length) {
+      finish();
+      return;
+    }
+    const question = questions[state.index];
+    addBubble('assistant', question.ask, {
+      why: question.why,
+      examples: question.examples,
+      allowSkip: question.required === false,
+    });
+    setComposerEnabled(true);
+    input.value = '';
+  }
+
+  function finish() {
+    state.finished = true;
+    const result = renderPrompt(scenes, state.scene.id, state.answers);
+    resultPre.textContent = result.prompt;
+    resultBox.classList.remove('hidden');
+    setComposerEnabled(false, '已经生成，可直接复制上面的提示词');
+    if (result.missing.length) {
+      addBubble('assistant', '还有必填项没回答：' + result.missing.join('、') + '，你可以点「重来」补上。', { small: true });
+    } else {
+      addBubble('assistant', '完成。右边就是成品提示词，复制走就能用。', { small: true });
+    }
+    resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function startScene(sceneId) {
+    const scene = findScene(scenes, sceneId);
+    if (!scene) return;
+    state.scene = scene;
+    state.index = -1;
+    state.answers = {};
+    state.finished = false;
+    messages.innerHTML = '';
+    resultBox.classList.add('hidden');
+    picker.classList.add('hidden');
+    workbench.classList.remove('hidden');
+    $('#workbench-title').textContent = (scene.icon ? scene.icon + ' ' : '') + scene.title;
+    addBubble('assistant', '我们开始「' + scene.title + '」。我会一次问一个问题，你用大白话回答就行。');
+    renderCard();
+    nextQuestion();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function submitAnswer() {
+    if (!state.scene || state.finished) return;
+    const question = state.scene.questions[state.index];
+    if (!question) return;
+    const value = input.value.trim();
+    if (!value) return;
+    state.answers[question.key] = value;
+    addBubble('user', value);
+    renderCard();
+    nextQuestion();
+  }
+
+  function resetAll() {
+    state.scene = null;
+    state.index = -1;
+    state.answers = {};
+    state.finished = false;
+    workbench.classList.add('hidden');
+    picker.classList.remove('hidden');
+    searchInput && searchInput.focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  searchInput.addEventListener('input', () => renderPicker(searchInput.value));
+  grid.addEventListener('click', (event) => {
+    const card = event.target.closest('.scene-card');
+    if (card) startScene(card.dataset.id);
+  });
+  sendButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    submitAnswer();
+  });
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.isComposing) {
+      event.preventDefault();
+      submitAnswer();
+    }
+  });
+  restartButton.addEventListener('click', () => {
+    if (state.scene) startScene(state.scene.id);
+  });
+  switchButton.addEventListener('click', resetAll);
+  copyButton.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(resultPre.textContent);
+      copyButton.textContent = '已复制 ✓';
+      setTimeout(() => { copyButton.textContent = '复制提示词'; }, 1600);
+    } catch (error) {
+      copyButton.textContent = '复制失败，请手动选择';
+    }
+  });
+
+  renderPicker('');
+})();
+</script>
+</body>
+</html>

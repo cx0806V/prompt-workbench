@@ -11,6 +11,14 @@
 > **线上服务已上线**：`https://prompt-workbench.cx200809-2022.workers.dev`
 > 直接打开 `/health` 可看到 `{"ok":true,"sceneCount":20}`，MCP 端点是 `/mcp`。可以自建（一键部署见下），也可以直接用这个公共实例。
 
+## 在线试用（不用装任何东西）
+
+[**打开网页工作台**](https://cx0806v.github.io/prompt-workbench/) —— 选场景 → 被追问几句 → 右侧定义卡实时生长 → 复制成品提示词。纯前端，不登录、不花一分钱。
+
+![场景选择](https://cx0806v.github.io/prompt-workbench/preview.png)
+
+![工作台：左侧对话、右侧定义卡实时生长](https://cx0806v.github.io/prompt-workbench/preview-workbench.png)
+
 ---
 
 ## 为什么做这个
