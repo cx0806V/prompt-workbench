@@ -121,9 +121,25 @@ npm run deploy:api
 
 没配 Secret 时不会报错，只会跳过部署、只跑测试。
 
-## 在 AI 客户端里使用
+## 在 AI 客户端里使用（三步接入）
 
-把下面的地址填进客户端的 MCP 配置（字段名随客户端版本不同，按你客户端的文档改）：
+**适合：已经在自己 AI 客户端里工作、想把「提示词工作台」接进去的人。**
+
+1. **拿到地址**：`https://prompt-workbench.cx200809-2022.workers.dev/mcp`（或者你自己部署的 `<worker>.<子域>.workers.dev/mcp`）
+2. **在客户端 MCP 配置里加一条**（见下表）
+3. **重启客户端** → 在对话框里说「用 prompt-workbench 帮我审一下这段代码」
+
+### 各客户端速查
+
+| 客户端 | 配置位置 | 写法 |
+| --- | --- | --- |
+| **WorkBuddy** | `~/.workbuddy/connectors/default/mcp.json` 的 `mcpServers` | `{"type":"streamableHttp","url":".../mcp","timeout":30000}` ✅ 已实测 |
+| **Claude Desktop** | `claude_desktop_config.json` | `{"type":"http","url":".../mcp"}` |
+| **Cursor** | `~/.cursor/mcp.json` 的 `mcpServers` | `{"type":"http","url":".../mcp"}` |
+| **VS Code** | 工作区 `.vscode/mcp.json` 或用户设置 | `{"type":"http","url":".../mcp"}` |
+| **CodeBuddy / Trae / Cline / Continue** | 各自的 MCP 设置页 | 选「远程 MCP / Streamable HTTP」，粘贴 URL |
+
+通用写法：
 
 ```json
 {
@@ -136,8 +152,10 @@ npm run deploy:api
 }
 ```
 
-> 只支持 stdio 的老客户端：用 `mcp-remote` 之类做 HTTP→stdio 桥接。⚠️ 各客户端支持情况以官方文档为准。
-> 想用自己部署的实例，把 URL 换成你的 `<worker>.<子域>.workers.dev/mcp`。
+> ⚠️ `type` 字段名各客户端不同（`http` / `streamableHttp` / `sse`），以各自官方文档为准。
+> 只支持 stdio 的老客户端：用 `npx mcp-remote <url>` 做 HTTP→stdio 桥接。
+> **DeepSeek 网页版 / App 不支持 MCP**——用 DeepSeek 的人请走「网页生成提示词 → 复制粘贴」，不需要部署。
+> 判断标准：客户端支持「远程 MCP / Streamable HTTP」就能直连；只支持本地命令行（stdio）的，需要桥接。
 
 典型对话：
 
