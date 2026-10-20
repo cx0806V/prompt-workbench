@@ -72,6 +72,19 @@ npm run deploy
 
 脚本会：打包 → 上传 script → 开启 `workers.dev` 访问，全程无交互。
 
+### 自动部署（push 即上线）
+
+仓库自带 `.github/workflows/ci.yml`：**push 到 `main` 时先跑测试，测试通过后自动部署**。
+
+只需要在 GitHub 里配两个 Secret（`Settings → Secrets and variables → Actions → New repository secret`）：
+
+| Secret | 值 |
+| --- | --- |
+| `CF_API_TOKEN` | Cloudflare API 令牌（权限：Account → Workers Scripts → Edit） |
+| `CF_ACCOUNT_ID` | 你的 Cloudflare 账户 ID |
+
+没配 Secret 时不会报错，只会跳过部署、只跑测试。
+
 ## 在 AI 客户端里使用
 
 把下面的地址填进客户端的 MCP 配置（字段名随客户端版本不同，按你客户端的文档改）：
