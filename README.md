@@ -108,6 +108,26 @@ npm run deploy
 > **你**：帮我写份项目总结报告。
 > **AI**：*调用 `recommend_scene`* → 匹配到「写作 / 把一句话要求变成写作提示词」，然后调用 `get_questionnaire` 开始逐个问你。
 
+### WorkBuddy（连接器，客户端内直接用）
+
+WorkBuddy 支持远程 MCP 连接器。把下面这段加进 `~/.workbuddy/connectors/default/mcp.json` 的 `mcpServers` 里，重启 WorkBuddy 就出现在工具列表里——**不装、不注册、不需要 key**，消耗的是用户自己的 WorkBuddy 额度：
+
+```json
+{
+  "mcpServers": {
+    "prompt-workbench": {
+      "type": "streamableHttp",
+      "url": "https://prompt-workbench.cx200809-2022.workers.dev/mcp",
+      "timeout": 30000
+    }
+  }
+}
+```
+
+之后在 WorkBuddy 里说「帮我审一下这段代码」，它会调用 `recommend_scene` → `get_questionnaire` → `render_prompt`，逐个问题问你。
+
+⚠️ 各客户端版本的连接器格式可能不同，以官方文档为准。
+
 ## 作为 Skill 安装（离线兜底，不需要 MCP）
 
 仓库里的 [`skills/prompt-workbench/`](skills/prompt-workbench) 是**从同一份场景数据自动生成**的 Skill 包（23 个文件 / 33 KB）：
