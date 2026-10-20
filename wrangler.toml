@@ -1,0 +1,6 @@
+name = "prompt-workbench"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+
+# 纯函数服务：不需要 KV / D1 / R2 / 任何 API key
+# 部署后入口：https://<worker-name>.<account>.workers.dev/mcp
