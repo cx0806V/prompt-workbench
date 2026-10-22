@@ -5,7 +5,7 @@
  * 因此 MCP Server、Skill 构建脚本、网页工作台三个壳可以共用同一份逻辑，且能直接单测。
  */
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.2.1';
 
 /**
  * 通用交付规则：所有场景渲染时自动附加。
@@ -138,11 +138,31 @@ function bigrams(text) {
   return result;
 }
 
+/** 关键词命中：中文直接包含；英文转小写比较（用户常把 README / CSV / API 写成大写）。 */
+function keywordHit(queryLower, keyword) {
+  if (!keyword) return false;
+  return queryLower.includes(String(keyword).toLowerCase());
+}
+
+/**
+ * 场景检索语料：标题 + 分类 + 适用场景 + 关键词 + 每个问题的「示例说法」。
+ *
+ * 2026-10-20 实测 bug：用户原话「给我这个网页加一个导出 CSV 的按钮」召回为空。
+ * 原因：示例说法（examples）本来就是用户会说的原话，但原实现没把它纳入匹配语料。
+ */
+function sceneSearchText(scene) {
+  const examples = (scene.questions || []).flatMap((question) =>
+    Array.isArray(question.examples) ? question.examples : []
+  );
+  return [scene.title, scene.category, scene.whenToUse, (scene.keywords || []).join(' '), ...examples].join(' ');
+}
+
 /** 关键词匹配场景，返回按相关性排序的候选（给「我只有一句话，用哪个场景」用）。 */
 export function matchScenes(scenes, text) {
   const query = String(text || '').trim();
   if (!query) return [];
   const queryBigrams = bigrams(query);
+  const queryLower = query.toLowerCase();
 
   return scenes
     .map((scene) => {
@@ -151,10 +171,10 @@ export function matchScenes(scenes, text) {
       if (scene.category && query.includes(scene.category)) score += 2;
       if (scene.whenToUse && query.length >= 4 && scene.whenToUse.includes(query)) score += 3;
       for (const keyword of scene.keywords || []) {
-        if (keyword && query.includes(keyword)) score += 2;
+        if (keywordHit(queryLower, keyword)) score += 2;
       }
       // 兜底：关键词没命中时，用二字组重合度判断（中文口语描述常常不含关键词）
-      const sceneText = [scene.title, scene.category, scene.whenToUse, (scene.keywords || []).join(' ')].join(' ');
+      const sceneText = sceneSearchText(scene);
       let shared = 0;
       for (const pair of bigrams(sceneText)) {
         if (queryBigrams.has(pair)) shared += 1;

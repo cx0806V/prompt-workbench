@@ -267,3 +267,24 @@ test('MCP 错误分支', () => {
   const arrayMessage = handleMessage(allScenes, []);
   assert.equal(arrayMessage.error.code, -32600);
 });
+
+test('matchScenes 能召回口语化开发任务（2026-10-20 实测 bug）', () => {
+  // 真实用户原话：修复前召回为空
+  const exportButton = matchScenes(allScenes, '给我这个网页加一个导出 CSV 的按钮');
+  assert.ok(exportButton.length > 0, '「加一个导出按钮」不应召回为空');
+  assert.equal(exportButton[0].id, 'coding-task');
+
+  const loginPage = matchScenes(allScenes, '给我加一个登录页面');
+  assert.equal(loginPage[0].id, 'coding-task');
+
+  const searchBox = matchScenes(allScenes, '帮我在这个页面加一个搜索框');
+  assert.equal(searchBox[0].id, 'coding-task');
+
+  // 不能因为出现「网页」就全推给 coding-task
+  const slowPage = matchScenes(allScenes, '这个网页太慢了');
+  assert.equal(slowPage[0].id, 'perf-opt');
+
+  // 英文关键词大小写不敏感（README / CSV / API 用户常大写）
+  const readme = matchScenes(allScenes, '帮我写个 README');
+  assert.equal(readme[0].id, 'tech-doc');
+});
